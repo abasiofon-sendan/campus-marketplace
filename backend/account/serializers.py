@@ -27,7 +27,7 @@ class UserSerializer(serializers.Serializer):
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password'],
-            role=validated_data.get('role', 'user')
+            account_type=validated_data.get('account_type', 'buyer')
         )
         return user
     

@@ -1,17 +1,11 @@
 from rest_framework import status
 from rest_framework.response import Response
-from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.views import APIView
-from rest_framework.authtoken.models import Token
 from .utils import send_email_verification, generate_verification_code, CustomPasswordResetTokenGenerator, gen_simple_token
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from rest_framework_simplejwt.views import TokenObtainPairView
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.utils.crypto import get_random_string
-from django.utils import timezone
-from datetime import timedelta
-from django.core import signing
 from django.conf import settings
 from django.db import transaction
 from rest_framework.permissions import IsAuthenticated
@@ -77,7 +71,7 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         refresh = super().get_token(user)
-        refresh['role'] = user.role 
+        refresh['role'] = user.account_type
         return refresh
 
     def validate(self, attrs):
