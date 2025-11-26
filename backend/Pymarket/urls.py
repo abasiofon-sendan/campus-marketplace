@@ -20,6 +20,11 @@ from django.urls import path,include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('auth/', include('account.urls')),
-    path('paystack/', include('paymentapp.urls'))
+    path('auth/', include('djoser.urls')),
+    path('auth/', include('djoser.urls.jwt')),
+    # path('auth/', include('account.urls')),
+    path('products/', include('Products_app.urls')),
+    path('cart/', include('userCart.urls')),
+    path('payment/', include('paymentapp.urls')),
+    path("wallet/",include("wallet.urls"))
 ]

@@ -1,90 +1,58 @@
 from rest_framework import serializers
-from .models import Profile, UserType
-from django.utils.crypto import get_random_string
-from django.core.exceptions import ValidationError
+# from .models import UserProfile
+from django.contrib.auth import get_user_model
+from djoser.serializers import UserCreateSerializer, UserSerializer
+from .models import CustomUserModel
+from paymentapp.models import VendorWallet, BuyerWallet
+
+User = get_user_model()
+
+class UserCreateSerializer(UserCreateSerializer):
+    class Meta(UserCreateSerializer.Meta):
+        model = User
+        fields = ("id","email","username", "password","role")
+
+    def create(self, validate_data):
+        email = validate_data.get('email')
+        role = validate_data.get('role')
+        username = validate_data.get('username')
+
+        email = email.strip() if email else None
 
 
-class UserSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField()
-    account_type = serializers.ChoiceField(choices=['Vendor', 'Buyer'], default='Buyer')
-    password = serializers.CharField(write_only=True)
+        if not email or not role or not username:
+            raise serializers.ValidationError("You must provide email,username and role.")
+
+
+        
+        user = CustomUserModel(
+            email=email,
+            role=role,
+            username=username
+        )
+        user.set_password(validate_data['password'])
+        user.save()
+        if role == 'vendor':
+            VendorWallet.objects.create(vendor=user, balance=0)
+        elif role == 'buyer':
+            BuyerWallet.objects.create(user=user, balance=0)
+        return user
+
 
     def validate_email(self, value):
-        if Profile.objects.filter(email=value).exists():
-            raise ValidationError("Email is already in use.")
+        if User.objects.filter(email=value).exists():
+            raise serializers.ValidationError("A user with this email already exists.")
         return value
     
-
-    def validate_username(self, value):
-        if Profile.objects.filter(username=value).exists():
-            raise ValidationError("Username is already in use.")
-        return value
-
-
-    def create(self, validated_data):
-        user = Profile.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email'],
-            password=validated_data['password'],
-            account_type=validated_data.get('account_type', 'buyer')
-        )
-        return user
     
 
-class ProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ['id', 'username', 'email', 'account_type', 'email_verified', 'created_on']
-        read_only_fields = ['id', 'email_verified', 'created_on']
 
+class UserSerializer(UserSerializer):
+    class Meta(UserSerializer.Meta):
+        model = User
+        fields = ("id","username","role","email")
 
-class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField()
-    password = serializers.CharField(write_only=True)
-
-
-class EditPasswordSerializer(serializers.Serializer):
-    current_password = serializers.CharField()
-    new_password = serializers.CharField()
-    confirm_password = serializers.CharField()
-
-
-class OTPVerificationSerializer(serializers.Serializer):
-    otp = serializers.IntegerField()
-    # username = serializers.CharField() 
-    email = serializers.EmailField()
-
-
-class UserTypeSerializer(serializers.ModelSerializer):
-
-    class Meta:
-        model = UserType
-        fields = '__all__'
-
-
-class ResetPasswordSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-    username = serializers.CharField()
-
-    def validate(self, data):
-        email = data.get('email')
-        username = data.get('username')
-
-        try:
-            owner = Profile.objects.get(email=email, username=username)
-        except Profile.DoesNotExist:
-            raise ValidationError("No user found with the provided email and username.")
-        return data
-
-    def save(self):
-        user = Profile.objects.get(email=self.validated_data['email'])
-        otp = get_random_string(6,'0123456789')
-        return user, otp
-    
-
-class EditProfileSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Profile
-        fields = ['name', 'email', 'bio', 'avatar']
+# class UserProfileSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = UserProfile
+#         fields = ['user', 'role']        

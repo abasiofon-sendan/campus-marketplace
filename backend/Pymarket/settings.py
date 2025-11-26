@@ -9,9 +9,13 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
-
+import os
 from pathlib import Path
-
+from datetime import timedelta
+import dotenv
+dotenv.load_dotenv()
+from dotenv import load_dotenv
+load_dotenv()
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -20,7 +24,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-jb#uiq54y0@e$6r#4-!&$dxhde^$^jx@fenh(-)=45r4hdxntl'
+SECRET_KEY = SECRET_KEY = os.environ.get("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -41,7 +45,10 @@ INSTALLED_APPS = [
     'corsheaders',
     'djoser',
     'account',
-    'paymentapp'
+    'paymentapp',
+    'Products_app',
+    'userCart',
+    'wallet'
 ]
 
 MIDDLEWARE = [
@@ -134,13 +141,42 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOCAL_URL = os.environ.get("LOCAL_URL")
 
 
-AUTHENTICATION_BACKENDS = [
-    'django.contrib.auth.backends.ModelBackend',
-    'account.utils.EmailOrUsernameBackend',
-]
+# AUTHENTICATION_BACKENDS = [
+#     'django.contrib.auth.backends.ModelBackend',
+#     'account.utils.EmailOrUsernameBackend',
+# ]
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES':[
+        'rest_framework_simplejwt.authentication.JWTAuthentication'
+    ],
+    'DEFAULT_PERMISSION_CLASSES':[],
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+DJOSER = {
+    "LOGIN_FIELD": "email",
+    "USER_ID_FIELD": "email",
+    "USER_CREATE_PASSWORD_RETYPE": False,  # 👈 turn this off
+    "SERIALIZERS": {
+        "user_create": "account.serializers.UserCreateSerializer",
+        "user": "account.serializers.UserSerializer",
+        "current_user": "account.serializers.UserSerializer",
+    },
+}
 
 
-AUTH_USER_MODEL = 'account.Profile'
+AUTH_USER_MODEL = 'account.CustomUserModel'
 
 
-PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY')
+PAYSTACK_SECRET_KEY = os.environ.get("PAYSTACK_SECRET_KEY")
+
+# SUPABASE CONFIGURATION
+SUPABASE_URL = os.getenv('SUPABASE_URL')
+SUPABASE_SECRET = os.getenv('SUPABASE_SECRET')
+
+
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(hours=10),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1)
+}
