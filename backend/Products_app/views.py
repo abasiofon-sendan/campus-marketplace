@@ -14,10 +14,7 @@ class ProductListCreateView(APIView):
 
     def get(self, request):
         auth_user = request.user
-        try:
-            products = Product.objects.get(user=auth_user)
-        except Product.DoesNotExist:
-            return Response({"message":"product does not exist"})
+        products = Product.objects.filter(vendor_name=auth_user)
         serializer = ProductSerializer(products,many=True)
         return Response(serializer.data)
         
