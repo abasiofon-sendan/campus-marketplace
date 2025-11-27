@@ -68,7 +68,10 @@ class ProductDetailView(APIView):
         except Product.DoesNotExist:
             return Response({"message":"Product not found"})
         serializer = ProductSerializer(products,many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        for item in data:
+            item['vendor_name'] = auth_user.username
+        return Response(data)
 
     
     def put(self,request,pk):   
