@@ -19,12 +19,20 @@ class ProductListCreateView(APIView):
 
     def get(self, request):
         auth_user = request.user
-        products = Product.objects.filter(vendor_name=auth_user)
-        serializer = ProductSerializer(products,many=True)
+        # If the authenticated user is a vendor, return only their products.
+        # Buyers (and other roles) see all products.
+        user_role = getattr(auth_user, 'role', None)
+        if user_role == 'vendor':
+            products = Product.objects.filter(vendor_name=auth_user)
+        else:
+            products = Product.objects.all()
+        serializer = ProductSerializer(products, many=True)
         data = serializer.data
-        # replace vendor_name id with the username (or add vendor_username)
-        for item in data:
-            item['vendor_name'] = auth_user.username
+        # replace vendor_name id with the username and add vendor_username for each item
+        for prod, item in zip(products, data):
+            username = prod.vendor_name.username if prod.vendor_name else None
+            item['vendor_name'] = username
+            item['vendor_username'] = username
         return Response(data)
         
     def post(self, request):
@@ -132,12 +140,13 @@ class ProductDetailView(APIView):
     def get(self,request,pk):
         auth_user = request.user
         try:
-            product = Product.objects.get(pk=pk, vendor_name=auth_user)
+            # allow any authenticated user to view product details
+            product = Product.objects.get(pk=pk)
         except Product.DoesNotExist:
             return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)
         data = serializer.data
-        data['vendor_username'] = auth_user.username
+        data['vendor_username'] = product.vendor_name.username if product.vendor_name else None
         return Response(data)
 
     
