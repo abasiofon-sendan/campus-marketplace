@@ -16,7 +16,11 @@ class ProductListCreateView(APIView):
         auth_user = request.user
         products = Product.objects.filter(vendor_name=auth_user)
         serializer = ProductSerializer(products,many=True)
-        return Response(serializer.data)
+        data = serializer.data
+        # replace vendor_name id with the username (or add vendor_username)
+        for item in data:
+            item['vendor_name'] = auth_user.username
+        return Response(data)
         
     def post(self, request):
         user = request.user
