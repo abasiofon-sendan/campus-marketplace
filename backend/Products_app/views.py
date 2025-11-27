@@ -64,16 +64,17 @@ class ProductDetailView(APIView):
     def get(self,request,pk):
         auth_user = request.user
         try:
-            products = Product.objects.get(pk=pk,user=auth_user)
+            products = Product.objects.filter(pk=pk,vendor_name=auth_user)
         except Product.DoesNotExist:
             return Response({"message":"Product not found"})
         serializer = ProductSerializer(products,many=True)
         return Response(serializer.data)
+
     
     def put(self,request,pk):   
         auth_user = request.user
         try:
-            products = Product.objects.get(pk=pk, user = auth_user)
+            products = Product.objects.filter(pk=pk, vendor_name = auth_user)
         except Product.DoesNotExist:
             return Response({"message":"Product not found"})
         serializer = ProductSerializer(products,data=request.data)
