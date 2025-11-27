@@ -7,6 +7,11 @@ from .models import Product
 from .serializers import ProductSerializer
 from rest_framework.permissions import IsAuthenticated
 from .supabase_config import supabase
+import os
+import time
+import uuid
+from decimal import Decimal
+from storage3.exceptions import StorageApiError
 # Create your views here.
 
 class ProductListCreateView(APIView):
@@ -26,36 +31,99 @@ class ProductListCreateView(APIView):
         user = request.user
         print("User is:", user.id)
         data = request.data
-        images = request.FILES.getlist('image_url')
+
+        # collect uploaded files (if any)
+        images = request.FILES.getlist('image_url') if hasattr(request.FILES, 'getlist') else []
         images_urls = []
 
+        # If frontend provided image URLs in JSON body, prefer them unless files exist
+        if not images and isinstance(data.get('image_url', None), (list, tuple)):
+            images_urls = list(data.get('image_url', []))
+
+        # upload files to supabase storage (ensure unique keys to avoid 409)
         for image in images:
-            key = f"products/{user.id}/{image.name}"
-            res = supabase.storage.from_('marketplace').upload(key, image.read(),{
-                "content-type":image.content_type
-            })
+            # read file bytes once
+            file_bytes = image.read()
+            base, ext = os.path.splitext(image.name or "file")
+            unique_name = f"{base}_{uuid.uuid4().hex}{ext}"
+            key = f"products/{user.id}/{unique_name}"
+            try:
+                supabase.storage.from_('marketplace').upload(
+                    key,
+                    file_bytes,
+                    {"content-type": image.content_type}
+                )
+            except StorageApiError as e:
+                status_code = getattr(e, "statusCode", None)
+                msg = str(e)
+                if status_code == 409 or "Duplicate" in msg:
+                    unique_name = f"{base}_{int(time.time())}_{uuid.uuid4().hex}{ext}"
+                    key = f"products/{user.id}/{unique_name}"
+                    supabase.storage.from_('marketplace').upload(
+                        key,
+                        file_bytes,
+                        {"content-type": image.content_type}
+                    )
+                else:
+                    raise
+            # get public url and append (normalize dict/str responses)
             url = supabase.storage.from_('marketplace').get_public_url(key)
-            images_urls.append(url)
+            # normalize possible response shapes
+            if isinstance(url, dict):
+                possible = url.get('publicURL') or url.get('public_url') or url.get('publicUrl') or url.get('url')
+                if possible:
+                    images_urls.append(possible)
+                else:
+                    # fallback to stringify
+                    images_urls.append(str(url))
+            else:
+                images_urls.append(str(url))
 
-
-        data['image_url'] = images_urls
+        # Build a clean_data dict that works for both QueryDict (form) and JSON (dict)
         clean_data = {}
-        
-        for key,value in data.lists():
+        if hasattr(data, "lists"):
+            iterator = data.lists()
+        else:
+            iterator = ((k, v if isinstance(v, list) else [v]) for k, v in data.items())
+
+        for key, value in iterator:
             if len(value) == 1:
                 clean_data[key] = value[0]
             else:
                 clean_data[key] = value
-        clean_data['vendor_name'] = user.id
-        clean_data['image_url'] = images_urls  
-        print("Clean data is:", clean_data)      
 
+        # ensure vendor and images are set explicitly
+        clean_data['vendor_name'] = user.id
+        clean_data['image_url'] = images_urls
+
+        # convert numeric types to expected types
+        if 'price' in clean_data:
+            try:
+                clean_data['price'] = Decimal(str(clean_data['price']))
+            except Exception:
+                pass
+
+        if 'quantity' in clean_data:
+            try:
+                clean_data['quantity'] = int(clean_data['quantity'])
+            except Exception:
+                pass
+
+        if 'rating' in clean_data:
+            try:
+                clean_data['rating'] = int(clean_data['rating'])
+            except Exception:
+                clean_data['rating'] = 0
+
+        print("Clean data is:", clean_data)
 
         serializer = ProductSerializer(data=clean_data)
         if serializer.is_valid():
-            serializer.save()
-            return Response({"message":"Products Added Successfully"}, status=201)
-        return Response({"errors":serializer.errors}, status = status.HTTP_400_BAD_REQUEST)
+            product = serializer.save()
+            resp = ProductSerializer(product).data
+            resp['vendor_username'] = user.username
+            return Response(resp, status=201)
+        return Response({"errors": serializer.errors}, status=status.HTTP_400_BAD_REQUEST)
         
 
 class ProductDetailView(APIView):
@@ -64,13 +132,12 @@ class ProductDetailView(APIView):
     def get(self,request,pk):
         auth_user = request.user
         try:
-            products = Product.objects.filter(pk=pk,vendor_name=auth_user)
+            product = Product.objects.get(pk=pk, vendor_name=auth_user)
         except Product.DoesNotExist:
-            return Response({"message":"Product not found"})
-        serializer = ProductSerializer(products,many=True)
+            return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+        serializer = ProductSerializer(product)
         data = serializer.data
-        for item in data:
-            item['vendor_name'] = auth_user.username
+        data['vendor_username'] = auth_user.username
         return Response(data)
 
     
