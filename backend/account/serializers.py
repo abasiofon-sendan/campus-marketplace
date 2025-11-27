@@ -2,6 +2,7 @@ from rest_framework import serializers
 # from .models import UserProfile
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import CustomUserModel
 from paymentapp.models import VendorWallet, BuyerWallet
 
@@ -56,3 +57,14 @@ class UserSerializer(UserSerializer):
 #     class Meta:
 #         model = UserProfile
 #         fields = ['user', 'role']        
+
+
+
+class LoginSerializer(TokenObtainPairSerializer):
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        user = User.objects.get(pk=self.user.id)
+        serializer= UserSerializer(user)
+        data.update(
+            {'user': serializer.data})
+        return data

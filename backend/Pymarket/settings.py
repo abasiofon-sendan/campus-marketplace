@@ -180,5 +180,8 @@ SUPABASE_SECRET = os.getenv('SUPABASE_SECRET')
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(hours=10),
-    'REFRESH_TOKEN_LIFETIME': timedelta(days=1)
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=1),
+    "AUTH_HEADER_TYPES": ("Bearer",),
+    "TOKEN_OBTAIN_SERIALIZER": "account.serializers.LoginSerializer",
+
 }
