@@ -15,7 +15,7 @@ export default function VendorAnalyticsPage() {
   const router = useRouter()
 
   if (!user) {
-    router.push("/login")
+    router.push("/signin")
     return null
   }
 

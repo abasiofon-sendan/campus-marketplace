@@ -19,7 +19,7 @@ export default function SignUpPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
-  const [role, setRole] = useState<"customer" | "vendor">("customer")
+  const [role, setRole] = useState<"buyer" | "vendor">("buyer")
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
   const { toast } = useToast()
@@ -133,12 +133,12 @@ export default function SignUpPage() {
 
               <div className="space-y-2">
                 <Label htmlFor="role">I want to</Label>
-                <Select value={role} onValueChange={(value: "customer" | "vendor") => setRole(value)}>
+                <Select value={role} onValueChange={(value: "buyer" | "vendor") => setRole(value)}>
                   <SelectTrigger id="role">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="customer">Buy products (Customer)</SelectItem>
+                    <SelectItem value="buyer">Buy products (Buyer)</SelectItem>
                     <SelectItem value="vendor">Sell products (Vendor)</SelectItem>
                   </SelectContent>
                 </Select>

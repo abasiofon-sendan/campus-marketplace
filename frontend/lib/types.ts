@@ -2,7 +2,7 @@ export interface User {
   id: string
   email: string
   name: string
-  role: "vendor" | "customer"
+  role: "vendor" | "buyer"
   walletBalance: number
   avatar?: string
   createdAt: Date
@@ -11,12 +11,12 @@ export interface User {
 export interface Product {
   id: string
   vendorId: string
-  vendorName: string
-  name: string
+  vendor_name: string
+  product_name: string
   description: string
   price: number
   category: string
-  image: string // Keep for backward compatibility
+  image_url: string // Keep for backward compatibility
   images: string[] // Multiple images for slider
   stock: number
   sold: number
@@ -26,6 +26,7 @@ export interface Product {
 export interface CartItem {
   productId: string
   quantity: number
+  serverId?: string
 }
 
 export interface Transaction {
@@ -48,3 +49,13 @@ export interface Order {
 }
 
 export type Category = "Electronics" | "Fashion" | "Books" | "Food" | "Services" | "Other"
+
+
+export interface Purchase {
+  id: string
+  customerId: string
+  vendorId: string
+  productId: string
+  createdAt: Date
+  amount: number
+}

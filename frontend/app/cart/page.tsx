@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -15,29 +15,78 @@ import { useRouter } from "next/navigation"
 import { useToast } from "@/hooks/use-toast"
 
 export default function CartPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
   const { cart, updateQuantity, removeFromCart, clearCart, getCartTotal } = useCart()
   const router = useRouter()
   const { toast } = useToast()
   const [isProcessing, setIsProcessing] = useState(false)
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set(cart.map((item) => item.productId)))
 
-  useState(() => {
+  // keep selected items in sync when cart changes
+  useEffect(() => {
     setSelectedItems(new Set(cart.map((item) => item.productId)))
-  })
+  }, [cart])
 
-  if (!user) {
-    router.push("/login")
-    return null
-  }
+  // cache for remote product details (backend IDs)
+  const [remoteProducts, setRemoteProducts] = useState<Record<string, any>>({})
 
-  if (user.role !== "customer") {
+  // fetch missing products from backend when logged in
+  useEffect(() => {
+    const missingIds = cart
+      .map((c) => String(c.productId))
+      .filter((id) => !mockProducts.some((p) => String(p.id) === id) && !remoteProducts[id])
+
+    if (missingIds.length === 0) return
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+    if (!token) return
+
+    missingIds.forEach(async (id) => {
+      try {
+        const res = await fetch(`https://market-api-5lg1.onrender.com/products/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        if (!res.ok) return
+        const data = await res.json()
+        const prod = Array.isArray(data) ? data[0] : data
+        if (!prod) return
+        // map backend product shape to frontend-friendly shape used in this page
+        const mapped = {
+          id: String(prod.id),
+          vendorId: String(prod.vendor_name || prod.vendorId || ""),
+          vendor_name: prod.vendor_username || prod.vendor_name || "",
+          product_name: prod.product_name || prod.name || "",
+          description: prod.description || "",
+          price: Number(prod.price) || 0,
+          category: prod.category || "",
+          image_url: Array.isArray(prod.image_url) ? prod.image_url[0] || "/placeholder.svg" : prod.image_url || "/placeholder.svg",
+          images: Array.isArray(prod.image_url) ? prod.image_url : prod.images || [],
+          stock: prod.quantity ?? prod.stock ?? 0,
+          sold: prod.sold ?? 0,
+        }
+        setRemoteProducts((prev) => ({ ...prev, [String(prod.id)]: mapped }))
+      } catch (err) {
+        console.error("Failed to fetch product", id, err)
+      }
+    })
+  }, [cart, remoteProducts, user?.id])
+
+  // avoid redirecting during render (causes React warning) — redirect in effect
+  useEffect(() => {
+    if (!isLoading && !user) {
+      router.push("/signin")
+    }
+  }, [isLoading, user, router])
+
+  if (isLoading) return null
+  if (!user) return null
+
+  if (user.role !== "buyer") {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <main className="container py-16 text-center">
           <h1 className="text-2xl font-bold mb-4">Access Denied</h1>
-          <p className="text-muted-foreground mb-6">Only customers can access the shopping cart.</p>
+          <p className="text-muted-foreground mb-6">Only buyers can access the shopping cart.</p>
           <Link href="/">
             <Button>Go to Homepage</Button>
           </Link>
@@ -46,10 +95,29 @@ export default function CartPage() {
     )
   }
 
-  const cartItems = cart.map((item) => ({
-    ...item,
-    product: mockProducts.find((p) => p.id === item.productId)!,
-  }))
+  // map cart entries to products; filter out items where the product cannot be found
+
+  const cartItemsRaw = cart
+    .map((item) => ({
+      ...item,
+      product:
+        mockProducts.find((p) => String(p.id) === String(item.productId)) || remoteProducts[String(item.productId)] || null,
+    }))
+    .filter((item) => item.product !== null) as Array<{
+    productId: string
+    quantity: number
+    product: NonNullable<typeof mockProducts[number]> | any
+  }>
+
+  // deduplicate by productId (merge quantities) to avoid duplicate keys in the list
+  const cartItems = Object.values(
+    cartItemsRaw.reduce((acc, item) => {
+      const key = String(item.productId)
+      if (!acc[key]) acc[key] = { ...item }
+      else acc[key].quantity = (acc[key].quantity || 0) + (item.quantity || 0)
+      return acc
+    }, {} as Record<string, { productId: string; quantity: number; product: any }>)
+  )
 
   const selectedCartItems = cartItems.filter((item) => selectedItems.has(item.productId))
   const total = selectedCartItems.reduce((sum, item) => sum + item.product.price * item.quantity, 0)
@@ -147,8 +215,8 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-4">
             {cartItems.map((item) => (
               <Card key={item.productId} className={!selectedItems.has(item.productId) ? "opacity-60" : ""}>
-                <CardContent className="p-6">
-                  <div className="flex gap-4">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col sm:flex-row gap-4">
                     <div className="flex items-start pt-1">
                       <Checkbox
                         checked={selectedItems.has(item.productId)}
@@ -156,22 +224,22 @@ export default function CartPage() {
                       />
                     </div>
                     <img
-                      src={item.product.image || "/placeholder.svg"}
-                      alt={item.product.name}
-                      className="w-24 h-24 object-cover rounded-lg"
+                      src={item.product.image_url || "/placeholder.svg"}
+                      alt={item.product.product_name}
+                      className="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-lg"
                     />
-                    <div className="flex-1">
-                      <div className="flex items-start justify-between mb-2">
-                        <div>
-                          <h3 className="font-semibold text-lg">{item.product.name}</h3>
-                          <p className="text-sm text-muted-foreground">by {item.product.vendorName}</p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-col sm:flex-row items-start justify-between mb-2 gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-lg truncate">{item.product.product_name}</h3>
+                          <p className="text-sm text-muted-foreground">by {item.product.vendor_name}</p>
                         </div>
-                        <p className="text-xl font-bold">${item.product.price}</p>
+                        <p className="text-xl font-bold mt-1 sm:mt-0 sm:ml-4 flex-shrink-0">${item.product.price}</p>
                       </div>
 
-                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2">{item.product.description}</p>
+                      <p className="text-sm text-muted-foreground mb-4 line-clamp-2 break-words">{item.product.description}</p>
 
-                      <div className="flex items-center justify-between">
+                      <div className="flex flex-col sm:flex-row items-center justify-between">
                         <div className="flex items-center gap-2">
                           <Button
                             variant="outline"
@@ -205,7 +273,12 @@ export default function CartPage() {
                           <span className="text-sm text-muted-foreground ml-2">{item.product.stock} available</span>
                         </div>
 
-                        <Button variant="ghost" size="icon" onClick={() => removeFromCart(item.productId)}>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeFromCart(item.productId)}
+                          className="mt-2 sm:mt-0"
+                        >
                           <Trash2 className="h-4 w-4 text-destructive" />
                         </Button>
                       </div>
@@ -217,7 +290,7 @@ export default function CartPage() {
           </div>
 
           <div className="lg:col-span-1">
-            <Card className="sticky top-20">
+            <Card className="lg:sticky lg:top-20">
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
               </CardHeader>
@@ -228,7 +301,7 @@ export default function CartPage() {
                       {selectedCartItems.map((item) => (
                         <div key={item.productId} className="flex justify-between text-sm">
                           <span className="text-muted-foreground">
-                            {item.product.name} x {item.quantity}
+                            {item.product.product_name} x {item.quantity}
                           </span>
                           <span>${(item.product.price * item.quantity).toFixed(2)}</span>
                         </div>

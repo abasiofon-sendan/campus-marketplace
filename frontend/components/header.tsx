@@ -58,7 +58,7 @@ export function Header() {
         </nav>
 
         <div className="flex items-center gap-3">
-          {user?.role === "customer" && (
+            {user?.role === "buyer" && (
             <Link href="/cart">
               <Button variant="ghost" size="icon" className="relative">
                 <ShoppingCart className="h-5 w-5" />

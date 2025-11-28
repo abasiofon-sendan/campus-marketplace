@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState,useEffect } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { Header } from "@/components/header"
 import { Button } from "@/components/ui/button"
@@ -22,7 +22,58 @@ export default function ProductDetailPage() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [quantity, setQuantity] = useState(1)
 
-  const product = mockProducts.find((p) => p.id === params.id)
+  const [productDetail, setProductDetail] = useState<typeof mockProducts[number] | null>(null)
+  // Use fetched product when available; replace the later `const product = mockProducts.find(...)`
+  // with: `const product = productDetail ?? mockProducts.find((p) => p.id === params.id)`
+  const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!params?.id) return
+    let mounted = true
+    setLoading(true)
+    setFetchError(null)
+
+    ;(async () => {
+      try {
+        const token = typeof window !== "undefined" ? localStorage.getItem("token") : null
+        if (!token) throw new Error("Missing auth token")
+        const res = await fetch(`https://market-api-5lg1.onrender.com/products/${params.id}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        })
+        if (!res.ok) throw new Error(`Failed to fetch product (${res.status})`)
+        const data = await res.json()
+        // API may return an array (e.g. [product]) or a single object; normalize to object
+        const productData = Array.isArray(data) ? data[0] : data
+        if (mounted) setProductDetail(productData)
+      } catch (err: any) {
+        if (mounted) setFetchError(err?.message ?? "Failed to fetch")
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    })()
+
+    return () => {
+      mounted = false
+    }
+  }, [params?.id])
+
+  // prefer fetched productDetail, otherwise fall back to mock data by id
+  const product = productDetail ?? mockProducts.find((p) => String(p.id) === String(params?.id))
+
+  // normalize images from fetched productDetail (always define before early return so hooks order stays stable)
+  const images: string[] = Array.isArray(productDetail?.image_url)
+    ? productDetail!.image_url
+    : productDetail?.image_url
+    ? [String(productDetail!.image_url)]
+    : []
+
+  useEffect(() => {
+    setCurrentImageIndex((idx) => Math.min(idx, Math.max(0, images.length - 1)))
+  }, [images.length])
 
   if (!product) {
     return (
@@ -38,7 +89,7 @@ export default function ProductDetailPage() {
     )
   }
 
-  const images = product.images && product.images.length > 0 ? product.images : [product.image]
+  // images and index management handled above (based on productDetail)
 
   const handlePrevImage = () => {
     setCurrentImageIndex((prev) => (prev === 0 ? images.length - 1 : prev - 1))
@@ -72,7 +123,7 @@ export default function ProductDetailPage() {
               <div className="relative">
                 <img
                   src={images[currentImageIndex] || "/placeholder.svg"}
-                  alt={`${product.name} - Image ${currentImageIndex + 1}`}
+                  alt={`${product.product_name} - Image ${currentImageIndex + 1}`}
                   className="w-full h-[500px] object-cover rounded-t-lg"
                 />
 
@@ -98,15 +149,15 @@ export default function ProductDetailPage() {
 
                     {/* Image Indicators */}
                     <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                      {images.map((_, index) => (
+                      {images.map((img, index) => (
                         <button
                           key={index}
                           onClick={() => setCurrentImageIndex(index)}
-                          className={`h-2 rounded-full transition-all ${
-                            index === currentImageIndex ? "w-8 bg-primary" : "w-2 bg-white/50"
-                          }`}
+                          className={`h-8 w-8 rounded-full overflow-hidden transition-all ${index === currentImageIndex ? "ring-2 ring-primary" : "opacity-60"}`}
                           aria-label={`Go to image ${index + 1}`}
-                        />
+                        >
+                          <img src={img || "/placeholder.svg"} alt={`Related image ${index + 1}`} className="w-full h-full object-cover" />
+                        </button>
                       ))}
                     </div>
                   </>
@@ -140,7 +191,7 @@ export default function ProductDetailPage() {
           <div>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h1 className="text-3xl font-bold mb-2">{product.name}</h1>
+                <h1 className="text-3xl font-bold mb-2">{product.product_name}</h1>
                 <Badge variant="secondary">{product.category}</Badge>
               </div>
             </div>
@@ -167,11 +218,11 @@ export default function ProductDetailPage() {
             <Card className="mb-6">
               <CardContent className="p-4">
                 <p className="text-sm text-muted-foreground mb-1">Vendor</p>
-                <p className="text-lg font-semibold">{product.vendorName}</p>
+                <p className="text-lg font-semibold">{product.vendor_name}</p>
               </CardContent>
             </Card>
 
-            {user?.role === "customer" && (
+            {user?.role === "buyer" && (
               <>
                 {/* Quantity Selector */}
                 <div className="flex items-center gap-4 mb-6">

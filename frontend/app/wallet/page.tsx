@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Header } from "@/components/header"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -62,23 +62,38 @@ const mockTransactions = [
 ]
 
 export default function WalletPage() {
-  const { user } = useAuth()
+  const { user, topUp, isLoading } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
   const [amount, setAmount] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
+  const [isProcessing, setIsProcessing] = useState(false)
   const [isDialogOpen, setIsDialogOpen] = useState(false)
 
-  if (!user) {
-    router.push("/login")
-    return null
+  useEffect(() => {
+    // Only redirect to signin after auth initialization completes
+    if (!isLoading && !user) {
+      router.push("/signin")
+    }
+  }, [user, isLoading, router])
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="container py-8">
+          <p>Loading...</p>
+        </main>
+      </div>
+    )
   }
+
+  if (!user) return null
 
   const handleTopUp = async (e: React.FormEvent) => {
     e.preventDefault()
     const topUpAmount = Number.parseFloat(amount)
 
-    if (topUpAmount < 5) {
+    if (Number.isNaN(topUpAmount) || topUpAmount < 5) {
       toast({
         title: "Invalid amount",
         description: "Minimum top-up amount is $5",
@@ -87,19 +102,39 @@ export default function WalletPage() {
       return
     }
 
-    setIsLoading(true)
+    setIsProcessing(true)
 
-    // Simulate Paystack payment processing
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      const { success, checkoutUrl, reference, error, raw } = await topUp(topUpAmount)
+      if (success && checkoutUrl) {
+        // Redirect to Paystack checkout
+        window.location.href = checkoutUrl
+        return
+      }
 
-    toast({
-      title: "Top-up successful!",
-      description: `Your wallet has been credited with $${topUpAmount.toFixed(2)}`,
-    })
-
-    setIsLoading(false)
-    setAmount("")
-    setIsDialogOpen(false)
+      if (success && !checkoutUrl) {
+        // No checkout URL found in response — surface debug info
+        console.warn("Top-up succeeded but no checkoutUrl returned:", raw)
+        toast({
+          title: "Top-up initialized",
+          description: "Payment initialized but no checkout URL was returned. Please try again.",
+          variant: "destructive",
+        })
+      } else {
+        toast({
+          title: "Top-up failed",
+          description: error || "An error occurred during top-up. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (err) {
+      console.error(err)
+      toast({ title: "Top-up failed", description: "Network error", variant: "destructive" })
+    } finally {
+      setIsProcessing(false)
+      setAmount("")
+      setIsDialogOpen(false)
+    }
   }
 
   const handleWithdraw = async () => {
@@ -112,7 +147,7 @@ export default function WalletPage() {
       return
     }
 
-    setIsLoading(true)
+    setIsProcessing(true)
 
     // Simulate withdrawal processing
     await new Promise((resolve) => setTimeout(resolve, 2000))
@@ -122,13 +157,13 @@ export default function WalletPage() {
       description: "Your withdrawal request is being processed. Funds will arrive in 1-3 business days.",
     })
 
-    setIsLoading(false)
+    setIsProcessing(false)
   }
 
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      <main className="container py-8">
+      <main className="container py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">My Wallet</h1>
           <p className="text-muted-foreground">Manage your funds and view transaction history</p>
@@ -201,8 +236,8 @@ export default function WalletPage() {
                         <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                           Cancel
                         </Button>
-                        <Button type="submit" disabled={isLoading}>
-                          {isLoading ? "Processing..." : "Proceed to Payment"}
+                        <Button type="submit" disabled={isProcessing}>
+                          {isProcessing ? "Processing..." : "Proceed to Payment"}
                         </Button>
                       </DialogFooter>
                     </form>
@@ -213,7 +248,7 @@ export default function WalletPage() {
                     variant="outline"
                     className="flex-1 bg-transparent"
                     onClick={handleWithdraw}
-                    disabled={isLoading || user.walletBalance < 10}
+                    disabled={isProcessing || user.walletBalance < 10}
                   >
                     <ArrowUpRight className="mr-2 h-4 w-4" />
                     Withdraw

@@ -43,7 +43,7 @@ export default function RootLayout({
       <body className={`font-sans antialiased`}>
         <AuthProvider>
           <CartProvider>
-            {children}
+            <div className="min-h-screen px-4 sm:px-6 lg:px-8">{children}</div>
             <Toaster />
           </CartProvider>
         </AuthProvider>

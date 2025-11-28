@@ -27,7 +27,8 @@ export default function SignInPage() {
 
     try {
       const { success, user } = await login(email, password)
-
+      console.log({user});
+      
       if (success && user) {
         toast({
           title: "Welcome back!",

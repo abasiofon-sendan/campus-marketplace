@@ -36,10 +36,19 @@ export default function VendorProductsPage() {
   const { toast } = useToast()
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<string | null>(null)
-  const [uploadedImages, setUploadedImages] = useState<string[]>([])
+  const [uploadedImages, setUploadedImages] =  useState<string[]>([])
+  const [uploadedImageFiles, setUploadedImageFiles] = useState<File[]>([])
+  const [productName, setProductName] = useState("")
+  const [productDescription, setProductDescription] = useState("")
+  const [productPrice, setProductPrice] = useState("")
+  const [productStock, setProductStock] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState<Category | "">("")
+  const [rating, setRating] = useState<number>(0)
+
+  
 
   if (!user) {
-    router.push("/login")
+    router.push("/signin")
     return null
   }
 
@@ -60,18 +69,140 @@ export default function VendorProductsPage() {
 
   const vendorProducts = mockProducts.filter((p) => p.vendorId === user.id)
 
-  const handleSaveProduct = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    toast({
-      title: editingProduct ? "Product updated" : "Product added",
-      description: editingProduct
-        ? "Your product has been updated successfully."
-        : "Your new product has been added successfully.",
+
+  const handleSaveProduct = async (e: React.FormEvent<HTMLFormElement>) => {
+    console.log({productName, productDescription,   selectedCategory, uploadedImages, rating});
+
+
+    const formData = new FormData()
+
+    uploadedImageFiles.forEach((file) => {
+      formData.append("image_url", file)
     })
-    setIsDialogOpen(false)
-    setEditingProduct(null)
-    setUploadedImages([])
+    formData.append("product_name", productName)
+    formData.append("description", productDescription)
+    formData.append("price", productPrice)
+    formData.append("quantity", productStock)
+    formData.append("category", selectedCategory)
+    formData.append("rating", rating.toString())
+
+    e.preventDefault()  
+    const token = localStorage.getItem("token") || ""
+
+    // Basic client validation
+    if (!productName.trim()) {
+      toast({ title: "Missing name", description: "Please provide a product name.", variant: "destructive" })
+      return
+    }
+
+    const price = parseFloat(formData.get("price") as string || "0")
+    const quantity = parseInt(formData.get("quantity") as string || "0", 10)
+    try {
+      const response = await fetch("https://market-api-5lg1.onrender.com/products/create-product", {
+        method: "POST",
+        headers: {
+          // "Content-Type": "multipart/form-data",
+          Authorization: `Bearer ${token}`,
+        },
+        body: formData,
+      })
+
+      if (response.ok) {
+        toast({
+          title: "Product added",
+          description: "Your new product has been added successfully.",
+        })
+        setIsDialogOpen(false)
+        setEditingProduct(null)
+        setUploadedImages([])
+        // reset form states
+        setProductName("")
+        setProductDescription("")
+        setProductPrice("")
+        setProductStock("")
+        setSelectedCategory("")
+        setRating(0)
+      } else {
+        const error = await response.json().catch(() => ({ message: "Unknown error" }))
+        toast({
+          title: "Error",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        })
+      }
+    } catch (error) {
+      console.error("Error saving product:", error)
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      })
+    }
   }
+
+  // const handleSaveProduct = (e: React.FormEvent<HTMLFormElement>) => {
+  //   e.preventDefault()
+
+  //   const formData = new FormData(e.currentTarget)
+  //   const token = localStorage.getItem("token")
+
+  //   try {
+  //     const response = fetch("https://market-api-5lg1.onrender.com/products/create-product",{
+  //       method: "POST",
+  //       headers: {
+  //         "Authorization": `Bearer ${token}`,
+  //         'Content-Type': 'application/json',
+          
+  //     },
+  //       body: JSON.stringify({
+  //         name: formData.get("name"),
+  //         description: formData.get("description"),
+  //         price: parseFloat(formData.get("price") as string),
+  //         stock: parseInt(formData.get("quantity") as string, 10),
+  //         category: formData.get("category"),
+  //         images: uploadedImages,
+        
+  //       }
+  //       )
+  //   })
+
+  //   if (response.ok) {
+  //     toast({
+  //       title: "product added",
+  //       description: "Your new product has been added successfully.",
+  //     })
+  //     setIsDialogOpen(false)
+  //     setEditingProduct(null)
+  //     setUploadedImages([])
+  //   }else{
+  //     const error = await response.json()
+  //     toast({
+  //       title: "Error",
+  //       description: error.message || "Something went wrong. Please try again.",
+  //       variant: "destructive",
+  //     })
+  //   }
+  //     }
+    
+  //   catch (error) {
+  //     console.error("Error saving product:", error)
+  //     toast({
+  //       title: "Error",
+  //       description: "Something went wrong. Please try again.",
+  //       variant: "destructive",
+  //     })
+  //   }
+  // }
+  //   toast({
+  //     title: editingProduct ? "Product updated" : "Product added",
+  //     description: editingProduct
+  //       ? "Your product has been updated successfully."
+  //       : "Your new product has been added successfully.",
+  //   })
+  //   setIsDialogOpen(false)
+  //   setEditingProduct(null)
+  //   setUploadedImages([])
+  // }
 
   const handleDeleteProduct = (productId: string) => {
     toast({
@@ -85,6 +216,7 @@ export default function VendorProductsPage() {
     if (!files) return
 
     const fileArray = Array.from(files)
+    setUploadedImageFiles((prev) => [...prev, ...fileArray])
 
     fileArray.forEach((file) => {
       const reader = new FileReader()
@@ -133,25 +265,25 @@ export default function VendorProductsPage() {
                 <div className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Product Name</Label>
-                    <Input id="name" placeholder="Enter product name" required />
+                    <Input id="name" placeholder="Enter product name" required value={productName} onChange={(e) => setProductName(e.target.value)} />
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="description">Description</Label>
-                    <Textarea id="description" placeholder="Describe your product" rows={3} required />
+                    <Textarea id="description" placeholder="Describe your product" rows={3} required value={productDescription} onChange={(e) => setProductDescription(e.target.value)} />
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="price">Price ($)</Label>
-                      <Input id="price" type="number" step="0.01" min="0" placeholder="0.00" required />
+                      <Input id="price" type="number" step="0.01" min="0" placeholder="0.00" required value={productPrice} onChange={(e) => setProductPrice(e.target.value)} />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="stock">Stock</Label>
-                      <Input id="stock" type="number" min="0" placeholder="0" required />
+                      <Input id="stock" type="number" min="0" placeholder="0" required value={productStock} onChange={(e) => setProductStock(e.target.value)} />
                     </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="category">Category</Label>
-                    <Select required>
+                    <Select required value={selectedCategory} onValueChange={(value: Category | "") => setSelectedCategory(value)} >
                       <SelectTrigger id="category">
                         <SelectValue placeholder="Select category" />
                       </SelectTrigger>
@@ -239,15 +371,15 @@ export default function VendorProductsPage() {
                 <CardContent className="p-6">
                   <div className="flex gap-4">
                     <img
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
+                      src={product.image_url || "/placeholder.svg"}
+                      alt={product.product_name}
                       className="w-32 h-32 object-cover rounded-lg"
                     />
                     <div className="flex-1">
                       <div className="flex items-start justify-between mb-2">
                         <div>
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold text-xl">{product.name}</h3>
+                            <h3 className="font-semibold text-xl">{product.product_name}</h3>
                             <Badge variant="secondary">{product.category}</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground mb-3">{product.description}</p>

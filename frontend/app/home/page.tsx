@@ -24,20 +24,53 @@ export default function HomePage() {
   const { toast } = useToast()
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategory, setSelectedCategory] = useState<Category | "All">("All")
+const [products, setProducts] = useState<typeof mockProducts>([])
+  const [loading, setLoading] = useState(false)
+  const [fetchError, setFetchError] = useState<string | null>(null)
 
+  
   useEffect(() => {
-    if (!user) {
-      router.push("/")
+    const controller = new AbortController()
+    const signal = controller.signal
+
+    const fetchProducts = async () => {
+      setLoading(true)
+      setFetchError(null)
+      const token = typeof window !== 'undefined' ? (localStorage.getItem("token") || "") : ""
+      try {
+        const res = await fetch("https://market-api-5lg1.onrender.com/products/create-product", {
+          method: "GET",
+          signal,
+          headers: token
+            ? {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              }
+            : { 'Content-Type': 'application/json' },
+        })
+        if (!res.ok) throw new Error(`Failed to fetch products: ${res.status}`)
+        const data = await res.json()
+        setProducts(data)
+      } catch (err) {
+        if ((err as any)?.name === "AbortError") return
+        setFetchError((err as Error)?.message ?? "An unknown error occurred")
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [user, router])
 
-  if (!user) {
-    return null
-  }
+    fetchProducts()
+    return () => controller.abort()
+  }, [])
 
-  const filteredProducts = mockProducts.filter((product) => {
+  // Home is public — no redirect on page load. Guard buyer-only UI using optional chaining on `user`.
+
+  
+
+
+  const filteredProducts = products.filter((product) => {
     const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.product_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       product.description.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCategory = selectedCategory === "All" || product.category === selectedCategory
     return matchesSearch && matchesCategory
@@ -105,8 +138,8 @@ export default function HomePage() {
                 <Link href={`/product/${product.id}`}>
                   <CardHeader className="p-0 cursor-pointer">
                     <img
-                      src={product.image || "/placeholder.svg"}
-                      alt={product.name}
+                      src={product.image_url[0] || "/placeholder.svg"}
+                      alt={product.product_name}
                       className="w-full h-48 object-cover hover:scale-105 transition-transform"
                     />
                   </CardHeader>
@@ -114,7 +147,7 @@ export default function HomePage() {
                 <CardContent className="flex-1 p-4">
                   <div className="flex items-start justify-between mb-2">
                     <Link href={`/product/${product.id}`} className="hover:underline">
-                      <h3 className="font-semibold text-lg line-clamp-1">{product.name}</h3>
+                      <h3 className="font-semibold text-lg line-clamp-1">{product.product_name}</h3>
                     </Link>
                     <Badge variant="secondary" className="ml-2 shrink-0">
                       {product.category}
@@ -128,11 +161,11 @@ export default function HomePage() {
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground">by</p>
-                      <p className="text-sm font-medium">{product.vendorName}</p>
+                      <p className="text-sm font-medium">{product.vendor_name}</p>
                     </div>
                   </div>
                 </CardContent>
-                {user.role === "customer" && (
+                {user?.role === "buyer" && (
                   <CardFooter className="p-4 pt-0">
                     <Button
                       className="w-full"
@@ -148,7 +181,7 @@ export default function HomePage() {
             ))}
           </div>
 
-          {filteredProducts.length === 0 && (
+          {loading ? <div className="text-center py-10">Loading...</div> : filteredProducts.length === 0 && (
             <div className="text-center py-12">
               <p className="text-muted-foreground">No products found matching your criteria.</p>
             </div>
