@@ -44,12 +44,27 @@ class TopUpWAlletView(APIView):
         res_data= res.json()
 
         if res_data["status"] or res_data["data"]["status"]=="success":
-            TopUpMOdel.objects.create(
-                buyer=wallet,
-                amount=amount,
-                status="PENDING",
-                transaction_type="TOPUP"
-            )
+            # Ensure we persist the generated reference so the DB unique constraint
+            # is respected and later verification can look up the transaction.
+            try:
+                TopUpMOdel.objects.create(
+                    buyer=wallet,
+                    amount=amount,
+                    status="PENDING",
+                    transaction_type="TOPUP",
+                    reference=reference,
+                )
+            except Exception:
+                # If a rare collision or DB error occurs, generate a fresh reference
+                # and attempt a single retry to avoid IntegrityError on empty/duplicate refs.
+                reference = str(uuid.uuid4()).replace("-", "")[:12]
+                TopUpMOdel.objects.create(
+                    buyer=wallet,
+                    amount=amount,
+                    status="PENDING",
+                    transaction_type="TOPUP",
+                    reference=reference,
+                )
 
             return Response({
                 "message":"TOPUP initialize successfully","details":res_data
