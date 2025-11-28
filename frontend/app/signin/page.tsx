@@ -66,13 +66,13 @@ export default function SignInPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Package className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold">Campus Market</span>
+          <span className="text-xl font-bold">UpStart</span>
         </Link>
 
         <Card>
           <CardHeader>
             <CardTitle className="text-2xl">Welcome back</CardTitle>
-            <CardDescription>Sign in to your Campus Market account</CardDescription>
+            <CardDescription>Sign in to your UpStart account</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignIn} className="space-y-4">

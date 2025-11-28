@@ -90,9 +90,9 @@ const [products, setProducts] = useState<typeof mockProducts>([])
 
       <main className="container py-8">
         <section className="mb-12 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Welcome to Campus Market</h1>
+          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-balance">Welcome to UpStart</h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">
-            Your trusted marketplace for buying and selling within the college community
+            Your trusted marketplace for buying and selling within the student community
           </p>
         </section>
 

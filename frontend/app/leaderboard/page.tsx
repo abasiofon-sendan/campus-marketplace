@@ -115,7 +115,7 @@ export default function LeaderboardPage() {
       <Header />
       <main className="container py-8">
         <div className="mb-8 text-center">
-          <h1 className="text-4xl font-bold mb-3">Campus Market Leaderboard</h1>
+          <h1 className="text-4xl font-bold mb-3">UpStart Leaderboard</h1>
           <p className="text-lg text-muted-foreground">
             Celebrating our top-performing vendors and most active customers
           </p>

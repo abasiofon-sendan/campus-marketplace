@@ -35,7 +35,7 @@ export function Header() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Package className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold">Campus Market</span>
+          <span className="text-xl font-bold">UpStart</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6">
