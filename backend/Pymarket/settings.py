@@ -81,6 +81,11 @@ TEMPLATES = [
 ]
 
 CORS_ALLOW_ALL_ORIGINS = True
+# Also whitelist the production frontend domain explicitly (harmless when ALLOW_ALL is True)
+CORS_ALLOWED_ORIGINS = [
+    "https://upstartpy.vercel.app",
+    "http://localhost:3000",
+]
 
 
 WSGI_APPLICATION = 'Pymarket.wsgi.application'
