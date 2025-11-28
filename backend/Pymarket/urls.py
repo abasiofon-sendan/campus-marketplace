@@ -15,7 +15,12 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path,include
+from django.urls import path, include
+from django.http import HttpResponse
+
+
+def health_check(request):
+    return HttpResponse("OK")
 
 
 urlpatterns = [
@@ -27,4 +32,6 @@ urlpatterns = [
     path('cart/', include('userCart.urls')),
     path('payment/', include('paymentapp.urls')),
     path("wallet/",include("wallet.urls"))
+    ,
+    path("health/", health_check),
 ]
