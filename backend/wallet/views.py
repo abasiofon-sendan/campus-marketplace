@@ -86,25 +86,43 @@ class VerifyTopupView(APIView):
             )
         res_data = res.json()
 
-        if res_data['status'] or res_data["data"]["status"]=="success":
+        if res_data.get('status') or (res_data.get("data") and res_data["data"].get("status") == "success"):
 
             user = request.user
-            wallet = BuyerWallet.objects.get(user=user)
+            try:
+                wallet = BuyerWallet.objects.get(user=user)
+            except BuyerWallet.DoesNotExist:
+                return Response({"error": "Wallet not found."}, status=status.HTTP_404_NOT_FOUND)
 
-            transaction=TopUpMOdel.objects.get(
-                reference=reference,
-                status="PENDING"
-            )
+            try:
+                transaction = TopUpMOdel.objects.get(
+                    reference=reference,
+                    status="PENDING"
+                )
+            except TopUpMOdel.DoesNotExist:
+                # Nothing to do if transaction already processed or missing
+                return Response({"error": "Pending top-up transaction not found."}, status=status.HTTP_404_NOT_FOUND)
 
-            metadata = res_data["data"]
-            amount = metadata["amount"]
+            metadata = res_data.get("data", {})
+            amount = metadata.get("amount", 0)
 
-            wallet.balance +=amount
-            transaction.status="COMPLETED"
-    
+            # amount from Paystack is in the smallest unit (kobo). DB stores balance in kobo.
+            wallet.balance += int(amount)
+            transaction.status = "COMPLETED"
+
             wallet.save()
             transaction.save()
-            return Response({"data":res_data},status=status.HTTP_200_OK)
+
+            # Return the updated wallet balance in major units (Naira)
+            try:
+                wallet_balance = float(Decimal(wallet.balance) / Decimal(100))
+            except Exception:
+                wallet_balance = None
+
+            return Response({
+                "data": res_data,
+                "wallet_balance": wallet_balance
+            }, status=status.HTTP_200_OK)
         return Response({"error":"Failed to verifiy TOPUP"},status=status.HTTP_400_BAD_REQUEST)
 
             
