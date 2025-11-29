@@ -94,28 +94,37 @@ class VerifyTopupView(APIView):
             except BuyerWallet.DoesNotExist:
                 return Response({"error": "Wallet not found."}, status=status.HTTP_404_NOT_FOUND)
 
-            try:
-                transaction = TopUpMOdel.objects.get(
-                    reference=reference,
-                    status="PENDING"
-                )
-            except TopUpMOdel.DoesNotExist:
-                # Nothing to do if transaction already processed or missing
-                return Response({"error": "Pending top-up transaction not found."}, status=status.HTTP_404_NOT_FOUND)
+            # Try to find the transaction regardless of status so we can be idempotent.
+            transaction = TopUpMOdel.objects.filter(reference=reference).first()
+            if not transaction:
+                return Response({"error": "Top-up transaction not found."}, status=status.HTTP_404_NOT_FOUND)
 
+            # Ensure the requester owns the transaction
+            if getattr(transaction.buyer, 'user', None) != user:
+                return Response({"error": "You are not authorized to verify this transaction."}, status=status.HTTP_403_FORBIDDEN)
+
+            # If the transaction was already processed, return success with current balance
+            if transaction.status == "COMPLETED":
+                try:
+                    wallet_balance = float(Decimal(transaction.buyer.balance) / Decimal(100))
+                except Exception:
+                    wallet_balance = None
+                return Response({"message": "Top-up already processed.", "wallet_balance": wallet_balance, "data": res_data}, status=status.HTTP_200_OK)
+
+            # At this point the transaction exists and is not completed -> process it
             metadata = res_data.get("data", {})
-            amount = metadata.get("amount", 0)
+            amount = metadata.get("amount", transaction.amount or 0)
 
             # amount from Paystack is in the smallest unit (kobo). DB stores balance in kobo.
-            wallet.balance += int(amount)
+            transaction.buyer.balance += int(amount)
             transaction.status = "COMPLETED"
 
-            wallet.save()
+            transaction.buyer.save()
             transaction.save()
 
             # Return the updated wallet balance in major units (Naira)
             try:
-                wallet_balance = float(Decimal(wallet.balance) / Decimal(100))
+                wallet_balance = float(Decimal(transaction.buyer.balance) / Decimal(100))
             except Exception:
                 wallet_balance = None
 
