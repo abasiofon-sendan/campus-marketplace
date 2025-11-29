@@ -103,13 +103,13 @@ export default function SignUpPage() {
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
             <Package className="h-5 w-5" />
           </div>
-          <span className="text-xl font-bold">Campus Market</span>
+          <span className="text-xl font-bold">UpStart</span>
         </Link>
 
         <Card>
-          <CardHeader>
+            <CardHeader>
             <CardTitle className="text-2xl">Create an account</CardTitle>
-            <CardDescription>Join Campus Market to start buying or selling</CardDescription>
+            <CardDescription>Join UpStart to start buying or selling</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSignUp} className="space-y-4">
