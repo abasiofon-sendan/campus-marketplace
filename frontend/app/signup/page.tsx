@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useToast } from "@/hooks/use-toast"
 import { Package } from "lucide-react"
 import { useAuth } from "@/lib/auth-context"
+import { isStrongPassword } from "@/lib/auth-context"
+
 
 export default function SignUpPage() {
   const [name, setName] = useState("")
@@ -28,6 +30,25 @@ export default function SignUpPage() {
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
 
+
+    if (password.length < 8){
+      toast({
+        title: "Invalid password",
+        description: "Password must be up to eight characters",
+        variant: "destructive"
+      })
+      return;
+    }
+
+    if (!isStrongPassword(password)) {
+      toast({
+        title: "Invalid password",
+        description: "Password must contain 1 uppercase, 1 lowercase and 1 number",
+        variant: "destructive"
+      })
+      return;
+    }
+
     if (password !== confirmPassword) {
       toast({
         title: "Passwords don't match",
@@ -40,7 +61,7 @@ export default function SignUpPage() {
     setIsLoading(true)
 
     try {
-      const { success } = await signup(name, email, password, role)
+      const { success, status} = await signup(name, email, password, role)
 
       if (success) {
         toast({
@@ -49,16 +70,25 @@ export default function SignUpPage() {
         })
         router.push("/signin")
       } else {
-        toast({
+        if (status === 400){
+          toast({
           title: "Sign up failed",
           description: "Email already exists. Please try another.",
           variant: "destructive",
         })
+        }else if (status === 500){
+          toast({
+          title: "Sign up failed",
+          description: "Server Error. Please try another time.",
+          variant: "destructive",
+        })
+        }
+        
       }
     } catch (error) {
       toast({
         title: "Error",
-        description: "Something went wrong. Please try again.",
+        description: "Cannot connect to server. Please try again.",
         variant: "destructive",
       })
     } finally {

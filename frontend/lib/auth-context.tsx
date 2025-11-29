@@ -5,7 +5,7 @@ import type { User } from "./types"
 
 interface AuthContextType {
   user: User | null
-  signup: (name: string, email: string, password: string, role: "buyer" | "vendor") => Promise<{ success: boolean }>
+  signup: (name: string, email: string, password: string, role: "buyer" | "vendor") => Promise<{ success: boolean; status?: number }>
   login: (email: string, password: string) => Promise<{ success: boolean; user: User | null }>
   logout: () => void
   isLoading: boolean
@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (username: string, email: string, password: string, role: "buyer" | "vendor") => {
     try{
-      const response = await fetch('https://market-api-5lg1.onrender.com/auth/users/',{
+      const response = await fetch('http://127.0.0.1:8001/auth/users/',{
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,13 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })
 
       if(response.ok){
-        return { success: true }
+        return { success: true}
       }else{
-        return { success: false }
+        return { success: false, status: response.status }
       }
     } catch (error) {
       console.error('Error during signup:', error);
-      return { success: false }
+      return { success: false, status: 500 }
     }
     // // Simulate API delay
     // await new Promise((resolve) => setTimeout(resolve, 500))
@@ -250,4 +250,12 @@ export function useAuth() {
     throw new Error("useAuth must be used within an AuthProvider")
   }
   return context
+}
+
+export function isStrongPassword(password: string): boolean {
+  const hasUpper = /[A-Z]/.test(password);
+  const hasLower = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+
+  return hasUpper && hasLower && hasNumber;
 }
