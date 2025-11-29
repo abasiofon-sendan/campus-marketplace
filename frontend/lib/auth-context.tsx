@@ -37,7 +37,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signup = async (username: string, email: string, password: string, role: "buyer" | "vendor") => {
     try{
-      const response = await fetch('http://127.0.0.1:8001/auth/users/',{
+      const response = await fetch('https://market-api-5lg1.onrender.com/auth/users/',{
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
