@@ -1,11 +1,10 @@
-from django.shortcuts import render
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-
+from django.db.models import Avg
 from account.models import CustomUserModel
-from .models import TopCustomers, TopVendors, VendorProfiles, VendorContents
-from .serializers import TopCustomersSerializer, TopVendorsSerializer, VendorContentSerializer, VendorProfilesSerializer
+from .models import TopCustomers, TopVendors, VendorProfiles, VendorContents, Follow, ContentLike, ContentReview
+from .serializers import TopCustomersSerializer, TopVendorsSerializer, VendorContentSerializer, VendorProfilesSerializer, FollowSerializer, ContentLikeSerializer, ContentReviewSerializer
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
 
@@ -28,7 +27,6 @@ class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
-        # Only vendors can create/update profilesx
         if request.user.role != 'vendor':
             return Response(
                 {"error": "Only vendors can create profiles"}, 
@@ -36,7 +34,6 @@ class UpdateProfileView(APIView):
             )
         
         try:
-            # Check if profile already exists
             if VendorProfiles.objects.filter(user=request.user).exists():
                 return Response(
                     {"error": "Profile already exists. Use edit endpoint to update."}, 
@@ -59,7 +56,6 @@ class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
     def put(self, request, pk):
-        # Only vendors can edit profiles
         if request.user.role != 'vendor':
             return Response(
                 {"error": "Only vendors can edit profiles"}, 
@@ -112,7 +108,7 @@ class DeleteProfileView(APIView):
             return Response({"error": "Profile not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        
+
 
 class UserDeleteProfile(APIView):
     permission_classes = [IsAuthenticated]
@@ -130,7 +126,6 @@ class UploadContentView(APIView):
     permission_classes = [IsAuthenticated]
     
     def post(self, request):
-        # Only vendors can upload content
         if request.user.role != 'vendor':
             return Response(
                 {"error": "Only vendors can upload content"}, 
@@ -165,16 +160,24 @@ class GetUserProfileAndContents(APIView):
             
             contents = profile.user.videos.all().order_by('-uploaded_at')
             
+            # Check if current user is following this vendor
+            is_following = Follow.objects.filter(follower=request.user, vendor=profile.user).exists()
+            
             # Configure pagination
             paginator = PageNumberPagination()
             paginator.page_size = 10
             paginated_contents = paginator.paginate_queryset(contents, request)
             
             profile_serializer = VendorProfilesSerializer(profile)
-            contents_serializer = VendorContentSerializer(paginated_contents, many=True)
+            contents_serializer = VendorContentSerializer(
+                paginated_contents, 
+                many=True, 
+                context={'request': request}
+            )
             
             return Response({
                 "profile": profile_serializer.data,
+                "is_following": is_following,
                 "contents": contents_serializer.data,
                 "contents_count": contents.count(),
                 "next": paginator.get_next_link(),
@@ -182,5 +185,192 @@ class GetUserProfileAndContents(APIView):
             }, status=status.HTTP_200_OK)
         except VendorProfiles.DoesNotExist:
             return Response({"error": "Vendor profile not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class FollowVendorView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, vendor_id):
+        try:
+            vendor = CustomUserModel.objects.get(id=vendor_id, role='vendor')
+            
+            if request.user == vendor:
+                return Response(
+                    {"error": "You cannot follow yourself"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Check if already following
+            if Follow.objects.filter(follower=request.user, vendor=vendor).exists():
+                return Response(
+                    {"error": "You are already following this vendor"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            follow = Follow.objects.create(follower=request.user, vendor=vendor)
+            serializer = FollowSerializer(follow)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        except CustomUserModel.DoesNotExist:
+            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, vendor_id):
+        try:
+            vendor = CustomUserModel.objects.get(id=vendor_id, role='vendor')
+            follow = Follow.objects.get(follower=request.user, vendor=vendor)
+            follow.delete()
+            return Response({"message": "Successfully unfollowed"}, status=status.HTTP_204_NO_CONTENT)
+        
+        except CustomUserModel.DoesNotExist:
+            return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Follow.DoesNotExist:
+            return Response({"error": "You are not following this vendor"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class LikeContentView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, content_id):
+        try:
+            content = VendorContents.objects.get(id=content_id)
+            
+            # Check if already liked
+            if ContentLike.objects.filter(user=request.user, content=content).exists():
+                return Response(
+                    {"error": "You have already liked this content"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            like = ContentLike.objects.create(user=request.user, content=content)
+            serializer = ContentLikeSerializer(like)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        
+        except VendorContents.DoesNotExist:
+            return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, content_id):
+        try:
+            content = VendorContents.objects.get(id=content_id)
+            like = ContentLike.objects.get(user=request.user, content=content)
+            like.delete()
+            return Response({"message": "Successfully unliked"}, status=status.HTTP_204_NO_CONTENT)
+        
+        except VendorContents.DoesNotExist:
+            return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ContentLike.DoesNotExist:
+            return Response({"error": "You have not liked this content"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class ReviewContentView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def post(self, request, content_id):
+        if request.user.role != 'buyer':
+            return Response(
+                {"error": "Only buyers can review content"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            content = VendorContents.objects.get(id=content_id)
+            
+            # Check if already reviewed
+            if ContentReview.objects.filter(user=request.user, content=content).exists():
+                return Response(
+                    {"error": "You have already reviewed this content"}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            data = request.data.copy()
+            data['user'] = request.user.id
+            data['content'] = content_id
+            
+            serializer = ContentReviewSerializer(data=data)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_201_CREATED)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except VendorContents.DoesNotExist:
+            return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def put(self, request, content_id):
+        if request.user.role != 'buyer':
+            return Response(
+                {"error": "Only buyers can review content"}, 
+                status=status.HTTP_403_FORBIDDEN
+            )
+        
+        try:
+            content = VendorContents.objects.get(id=content_id)
+            review = ContentReview.objects.get(user=request.user, content=content)
+            
+            serializer = ContentReviewSerializer(review, data=request.data, partial=True)
+            if serializer.is_valid():
+                serializer.save()
+                return Response(serializer.data, status=status.HTTP_200_OK)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        
+        except VendorContents.DoesNotExist:
+            return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ContentReview.DoesNotExist:
+            return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    
+    def delete(self, request, content_id):
+        try:
+            content = VendorContents.objects.get(id=content_id)
+            review = ContentReview.objects.get(user=request.user, content=content)
+            review.delete()
+            return Response({"message": "Review deleted successfully"}, status=status.HTTP_204_NO_CONTENT)
+        
+        except VendorContents.DoesNotExist:
+            return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ContentReview.DoesNotExist:
+            return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class GetContentReviewsView(APIView):
+    def get(self, request, content_id):
+        try:
+            content = VendorContents.objects.get(id=content_id)
+            reviews = content.content_reviews.all()
+            
+            # Configure pagination
+            paginator = PageNumberPagination()
+            paginator.page_size = 10
+            paginated_reviews = paginator.paginate_queryset(reviews, request)
+            
+            serializer = ContentReviewSerializer(paginated_reviews, many=True)
+            
+            # Calculate average rating
+            total_reviews = reviews.count()
+            avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] if total_reviews > 0 else 0
+            
+            return Response({
+                "reviews": serializer.data,
+                "total_reviews": total_reviews,
+                "average_rating": round(avg_rating, 2) if avg_rating else 0,
+                "next": paginator.get_next_link(),
+                "previous": paginator.get_previous_link()
+            }, status=status.HTTP_200_OK)
+        
+        except VendorContents.DoesNotExist:
+            return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
