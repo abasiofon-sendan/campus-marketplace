@@ -12,6 +12,7 @@ class Product(models.Model):
     category = models.CharField(max_length=255)
     image_url= models.JSONField(max_length=255,blank=True,null=True, default=list)
     rating = models.PositiveIntegerField()
+    view_count = models.PositiveIntegerField(default=0, null=True,blank=True)
     # rating = models.ForeignKey()
     def __str__(self):
         return f"{self.product_name} ({self.vendor_name.username})"

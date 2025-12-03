@@ -147,6 +147,7 @@ class ProductDetailView(APIView):
         serializer = ProductSerializer(product)
         data = serializer.data
         data['vendor_username'] = product.vendor_name.username if product.vendor_name else None
+        product.view_count += 1
         return Response(data)
 
     
@@ -170,6 +171,16 @@ class ProductDetailView(APIView):
             return Response({"message":"Product not found"})
         product.delete()
         return Response({"message":"Deleted successfully"})
+
+
+
+class AllProductsView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self,request):
+        products= Product.objects.all()
+        serializer= ProductSerializer(products,many=True)
+        return Response(serializer.data)
 
 
 
