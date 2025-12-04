@@ -58,20 +58,32 @@ class VendorContentSerializer(serializers.ModelSerializer):
 class FollowSerializer(serializers.ModelSerializer):
     follower_email = serializers.EmailField(source='follower.email', read_only=True)
     vendor_email = serializers.EmailField(source='vendor.email', read_only=True)
+    vendor_followers_count = serializers.SerializerMethodField()
     
     class Meta:
         model = Follow
-        fields = ['id', 'follower', 'vendor', 'follower_email', 'vendor_email', 'created_at']
+        fields = ['id', 'follower', 'vendor', 'follower_email', 'vendor_email', 'vendor_followers_count', 'created_at']
         read_only_fields = ['follower', 'created_at']
+    
+    def get_vendor_followers_count(self, obj):
+        try:
+            profile = VendorProfiles.objects.get(user=obj.vendor)
+            return profile.followers_count
+        except VendorProfiles.DoesNotExist:
+            return 0
 
 
 class ContentLikeSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)
+    content_likes_count = serializers.SerializerMethodField()
     
     class Meta:
         model = ContentLike
-        fields = ['id', 'user', 'content', 'user_email', 'created_at']
+        fields = ['id', 'user', 'content', 'user_email', 'content_likes_count', 'created_at']
         read_only_fields = ['user', 'created_at']
+    
+    def get_content_likes_count(self, obj):
+        return obj.content.likes_count
 
 
 class ContentReviewSerializer(serializers.ModelSerializer):

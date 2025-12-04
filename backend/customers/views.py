@@ -211,7 +211,15 @@ class FollowVendorView(APIView):
             
             follow = Follow.objects.create(follower=request.user, vendor=vendor)
             serializer = FollowSerializer(follow)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            # Get updated follower count
+            vendor_profile = VendorProfiles.objects.get(user=vendor)
+            
+            return Response({
+                **serializer.data,
+                "vendor_followers_count": vendor_profile.followers_count,
+                "message": "Successfully followed vendor"
+            }, status=status.HTTP_201_CREATED)
         
         except CustomUserModel.DoesNotExist:
             return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -223,7 +231,14 @@ class FollowVendorView(APIView):
             vendor = CustomUserModel.objects.get(id=vendor_id, role='vendor')
             follow = Follow.objects.get(follower=request.user, vendor=vendor)
             follow.delete()
-            return Response({"message": "Successfully unfollowed"}, status=status.HTTP_204_NO_CONTENT)
+            
+            # Get updated follower count
+            vendor_profile = VendorProfiles.objects.get(user=vendor)
+            
+            return Response({
+                "message": "Successfully unfollowed",
+                "vendor_followers_count": vendor_profile.followers_count
+            }, status=status.HTTP_200_OK)
         
         except CustomUserModel.DoesNotExist:
             return Response({"error": "Vendor not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -249,7 +264,11 @@ class LikeContentView(APIView):
             
             like = ContentLike.objects.create(user=request.user, content=content)
             serializer = ContentLikeSerializer(like)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            
+            return Response({
+                **serializer.data,
+                "message": "Successfully liked content"
+            }, status=status.HTTP_201_CREATED)
         
         except VendorContents.DoesNotExist:
             return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
@@ -261,7 +280,14 @@ class LikeContentView(APIView):
             content = VendorContents.objects.get(id=content_id)
             like = ContentLike.objects.get(user=request.user, content=content)
             like.delete()
-            return Response({"message": "Successfully unliked"}, status=status.HTTP_204_NO_CONTENT)
+            
+            # Get updated likes count after deletion
+            updated_likes_count = content.likes_count
+            
+            return Response({
+                "message": "Successfully unliked",
+                "content_likes_count": updated_likes_count
+            }, status=status.HTTP_200_OK)
         
         except VendorContents.DoesNotExist:
             return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
