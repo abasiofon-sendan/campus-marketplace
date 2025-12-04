@@ -1,7 +1,7 @@
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
-from django.db.models import Avg
 from account.models import CustomUserModel
 from .models import TopCustomers, TopVendors, VendorProfiles, VendorContents, Follow, ContentLike, ContentReview
 from .serializers import TopCustomersSerializer, TopVendorsSerializer, VendorContentSerializer, VendorProfilesSerializer, FollowSerializer, ContentLikeSerializer, ContentReviewSerializer
@@ -145,7 +145,7 @@ class UploadContentView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GetUserProfileAndContents(APIView):
+class GetVendorProfileAndContents(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, pk):
@@ -178,6 +178,7 @@ class GetUserProfileAndContents(APIView):
             return Response({
                 "profile": profile_serializer.data,
                 "is_following": is_following,
+                "followers_count": profile.followers_count,
                 "contents": contents_serializer.data,
                 "contents_count": contents.count(),
                 "next": paginator.get_next_link(),
@@ -317,18 +318,16 @@ class ReviewContentView(APIView):
                     status=status.HTTP_400_BAD_REQUEST
                 )
             
-            data = request.data.copy()
-            data['user'] = request.user.id
-            data['content'] = content_id
-            
-            serializer = ContentReviewSerializer(data=data)
+            serializer = ContentReviewSerializer(data=request.data)
             if serializer.is_valid():
-                serializer.save()
+                serializer.save(user=request.user, content=content)
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         
         except VendorContents.DoesNotExist:
             return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -353,6 +352,8 @@ class ReviewContentView(APIView):
             return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
         except ContentReview.DoesNotExist:
             return Response({"error": "Review not found"}, status=status.HTTP_404_NOT_FOUND)
+        except ValidationError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
@@ -384,14 +385,9 @@ class GetContentReviewsView(APIView):
             
             serializer = ContentReviewSerializer(paginated_reviews, many=True)
             
-            # Calculate average rating
-            total_reviews = reviews.count()
-            avg_rating = reviews.aggregate(Avg('rating'))['rating__avg'] if total_reviews > 0 else 0
-            
             return Response({
                 "reviews": serializer.data,
-                "total_reviews": total_reviews,
-                "average_rating": round(avg_rating, 2) if avg_rating else 0,
+                "total_reviews": reviews.count(),
                 "next": paginator.get_next_link(),
                 "previous": paginator.get_previous_link()
             }, status=status.HTTP_200_OK)
@@ -400,3 +396,5 @@ class GetContentReviewsView(APIView):
             return Response({"error": "Content not found"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+

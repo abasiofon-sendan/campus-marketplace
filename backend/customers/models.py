@@ -63,7 +63,6 @@ class VendorContents(models.Model):
 
 
 class Follow(models.Model):
-    """Model to track vendor follows"""
     follower = models.ForeignKey(User, on_delete=models.CASCADE, related_name='following')
     vendor = models.ForeignKey(User, on_delete=models.CASCADE, related_name='followers')
     created_at = models.DateTimeField(auto_now_add=True)
@@ -129,7 +128,6 @@ class ContentLike(models.Model):
 class ContentReview(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='content_reviews')
     content = models.ForeignKey(VendorContents, on_delete=models.CASCADE, related_name='content_reviews')
-    rating = models.PositiveIntegerField(choices=[(i, i) for i in range(1, 6)])  # 1-5 stars
     comment = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -161,4 +159,4 @@ class ContentReview(models.Model):
         content.save()
 
     def __str__(self):
-        return f"{self.user.email} reviewed content {self.content.id} - {self.rating} stars"
+        return f"{self.user.email} reviewed content {self.content.id}"

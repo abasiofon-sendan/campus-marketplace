@@ -91,10 +91,10 @@ class ContentReviewSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = ContentReview
-        fields = ['id', 'user', 'content', 'rating', 'comment', 'user_email', 'created_at', 'updated_at']
-        read_only_fields = ['user', 'created_at', 'updated_at']
+        fields = ['id', 'user', 'content','comment', 'user_email', 'created_at', 'updated_at']
+        read_only_fields = ['user', 'created_at', 'updated_at', 'content']
     
-    def validate_rating(self, value):
-        if value < 1 or value > 5:
-            raise serializers.ValidationError("Rating must be between 1 and 5")
+    def validate_comment(self, value):
+        if not value or len(value.strip()) < 3:
+            raise serializers.ValidationError("Comment must be at least 3 characters long")
         return value
