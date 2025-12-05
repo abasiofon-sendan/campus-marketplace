@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'userCart',
     'wallet',
     'customers',
+    'usersearch',
     'cloudinary',
     'cloudinary_storage',
 ]

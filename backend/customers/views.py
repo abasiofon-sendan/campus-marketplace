@@ -398,3 +398,18 @@ class GetContentReviewsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+class GetUserProfile(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        following_count = Follow.objects.filter(follower=request.user).count()
+        following = Follow.objects.filter(follower=request.user).select_related('vendor')
+        
+        following_data = [{
+            'vendor_username': follow.vendor.username,
+        } for follow in following]
+        
+        return Response({
+            'following_count': following_count,
+            'following': following_data
+        }, status=status.HTTP_200_OK)
