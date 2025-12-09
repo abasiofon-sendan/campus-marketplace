@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'corsheaders',
     'djoser',
+    'drf_spectacular',
     'account',
     'paymentapp',
     'Products_app',

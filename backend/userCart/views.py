@@ -5,8 +5,17 @@ from rest_framework import status
 from .models import CartItem
 from .serializers import CartItemSerializer
 from Products_app.models import Product
+from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 class CarItemView(APIView):
+
+    @extend_schema(
+        summary="User Cart Items",
+        description="Retrieve, add, or delete items in the user's cart.",
+        request=CartItemSerializer,
+        responses={200: CartItemSerializer(many=True)},
+    )
     def get(self,request):
         cart_items=CartItem.objects.filter(user=request.user)
         serializer=CartItemSerializer(cart_items,many=True)

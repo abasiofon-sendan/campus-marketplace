@@ -7,9 +7,16 @@ from .models import TopCustomers, TopVendors, VendorProfiles, VendorContents, Fo
 from .serializers import TopCustomersSerializer, TopVendorsSerializer, VendorContentSerializer, VendorProfilesSerializer, FollowSerializer, ContentLikeSerializer, ContentReviewSerializer
 from rest_framework import status
 from rest_framework.pagination import PageNumberPagination
+from drf_spectacular.utils import extend_schema, OpenApiParameter, OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 
 class TopCustomersView(APIView):
+    @extend_schema(
+            summary="Retrieve Top  Customers",
+            description="Get a list of top 10 customers based on their total purchases.",
+            responses={200: TopCustomersSerializer(many=True)},
+    )
     def get(self, request):
         top_customers = TopCustomers.objects.all().order_by('-total_purchases')[:10]
         serializer = TopCustomersSerializer(top_customers, many=True)
@@ -17,6 +24,11 @@ class TopCustomersView(APIView):
     
 
 class TopVendorsView(APIView):
+    @extend_schema(
+            summary="Retrieve Top Vendors",
+            description="Get a list of top 10 vendors based on their total sales.",
+            responses={200: TopVendorsSerializer(many=True)},
+    )
     def get(self, request):
         top_vendors = TopVendors.objects.all().order_by('-total_sales')[:10]
         serializer = TopVendorsSerializer(top_vendors, many=True)
@@ -25,7 +37,24 @@ class TopVendorsView(APIView):
 
 class UpdateProfileView(APIView):
     permission_classes = [IsAuthenticated]
-    
+
+    @extend_schema(
+        summary="Create Vendor Profile",
+        description="Create a vendor profile for the authenticated user.",
+        request=VendorProfilesSerializer,
+        responses={201: VendorProfilesSerializer},
+        examples=[
+            OpenApiExample(
+                'Create Vendor Profile Example',
+                summary='Example of creating a vendor profile',
+                description='An example request to create a vendor profile.',
+                value={
+                    "bio": "Experienced vendor specializing in electronics.",
+                    "profile_picture": "http://example.com/images/profile.jpg",
+                },
+            ),
+        ]
+    )
     def post(self, request):
         if request.user.role != 'vendor':
             return Response(
@@ -55,6 +84,23 @@ class UpdateProfileView(APIView):
 class EditProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Edit Vendor Profile",
+        description="Update vendor profile information. Only the profile owner can edit.",
+        request=VendorProfilesSerializer,
+        responses={200: VendorProfilesSerializer},
+        examples=[
+            OpenApiExample(
+                'Edit Profile Example',
+                summary='Example of editing a vendor profile',
+                description='An example request to update vendor profile.',
+                value={
+                    "bio": "Updated bio text",
+                    "profile_picture": "http://example.com/images/new_profile.jpg",
+                },
+            ),
+        ]
+    )
     def put(self, request, pk):
         if request.user.role != 'vendor':
             return Response(
@@ -85,6 +131,11 @@ class EditProfileView(APIView):
 class DeleteProfileView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Delete Vendor Profile",
+        description="Permanently delete vendor profile and user account. Only the profile owner can delete.",
+        responses={204: None},
+    )
     def delete(self, request, pk):
         if request.user.role != 'vendor':
             return Response(
@@ -113,6 +164,11 @@ class DeleteProfileView(APIView):
 class UserDeleteProfile(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Delete User Account",
+        description="Permanently delete the current user's account and all associated data.",
+        responses={204: None},
+    )
     def delete(self, request):
         try:
             user = request.user
@@ -124,6 +180,23 @@ class UserDeleteProfile(APIView):
 
 class UploadContentView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=VendorContentSerializer,
+        responses={201: VendorContentSerializer},
+        examples=[
+            OpenApiExample(
+                'Upload Content Example',
+                summary='Example of uploading vendor content',
+                description='An example request to upload content for a vendor.',
+                value={
+                    "title": "New Product Launch",
+                    "description": "Check out our latest product!",
+                    "video_url": "http://example.com/videos/new_product.mp4"
+                },
+            ),
+        ]
+    )
     
     def post(self, request):
         if request.user.role != 'vendor':
@@ -148,6 +221,14 @@ class UploadContentView(APIView):
 class GetVendorProfileAndContents(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Get Vendor Profile and Contents",
+        description="Retrieve vendor profile with paginated content feed.",
+        parameters=[
+            OpenApiParameter(name='page', location=OpenApiParameter.QUERY, description='Page number', type=OpenApiTypes.INT)
+        ],
+        responses={200: dict},
+    )
     def get(self, request, pk):
         try:
             profile = VendorProfiles.objects.get(user__id=pk)
@@ -193,6 +274,11 @@ class GetVendorProfileAndContents(APIView):
 class FollowVendorView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Follow Vendor",
+        description="Follow a vendor to see their content in your feed.",
+        responses={201: FollowSerializer},
+    )
     def post(self, request, vendor_id):
         try:
             vendor = CustomUserModel.objects.get(id=vendor_id, role='vendor')
@@ -227,6 +313,11 @@ class FollowVendorView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    @extend_schema(
+        summary="Unfollow Vendor",
+        description="Unfollow a vendor to stop seeing their content in your feed.",
+        responses={200: dict},
+    )
     def delete(self, request, vendor_id):
         try:
             vendor = CustomUserModel.objects.get(id=vendor_id, role='vendor')
@@ -252,6 +343,11 @@ class FollowVendorView(APIView):
 class LikeContentView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Like Content",
+        description="Like a piece of vendor content.",
+        responses={201: ContentLikeSerializer},
+    )
     def post(self, request, content_id):
         try:
             content = VendorContents.objects.get(id=content_id)
@@ -276,6 +372,11 @@ class LikeContentView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    @extend_schema(
+        summary="Unlike Content",
+        description="Remove your like from vendor content.",
+        responses={200: dict},
+    )
     def delete(self, request, content_id):
         try:
             content = VendorContents.objects.get(id=content_id)
@@ -301,6 +402,12 @@ class LikeContentView(APIView):
 class ReviewContentView(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Create Content Review",
+        description="Submit a review for vendor content. Only buyers can review.",
+        request=ContentReviewSerializer,
+        responses={201: ContentReviewSerializer},
+    )
     def post(self, request, content_id):
         if request.user.role != 'buyer':
             return Response(
@@ -331,6 +438,12 @@ class ReviewContentView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    @extend_schema(
+        summary="Update Content Review",
+        description="Edit an existing review for vendor content.",
+        request=ContentReviewSerializer,
+        responses={200: ContentReviewSerializer},
+    )
     def put(self, request, content_id):
         if request.user.role != 'buyer':
             return Response(
@@ -357,6 +470,11 @@ class ReviewContentView(APIView):
         except Exception as e:
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     
+    @extend_schema(
+        summary="Delete Content Review",
+        description="Delete your review from vendor content.",
+        responses={204: None},
+    )
     def delete(self, request, content_id):
         try:
             content = VendorContents.objects.get(id=content_id)
@@ -373,6 +491,14 @@ class ReviewContentView(APIView):
 
 
 class GetContentReviewsView(APIView):
+    @extend_schema(
+        summary="Get Content Reviews",
+        description="Retrieve all reviews for specific vendor content with pagination.",
+        parameters=[
+            OpenApiParameter(name='page', location=OpenApiParameter.QUERY, description='Page number', type=OpenApiTypes.INT)
+        ],
+        responses={200: dict},
+    )
     def get(self, request, content_id):
         try:
             content = VendorContents.objects.get(id=content_id)
@@ -401,6 +527,11 @@ class GetContentReviewsView(APIView):
 class GetUserProfile(APIView):
     permission_classes = [IsAuthenticated]
     
+    @extend_schema(
+        summary="Get Current User Profile",
+        description="Retrieve the authenticated user's profile including following count and list.",
+        responses={200: dict},
+    )
     def get(self, request):
         following_count = Follow.objects.filter(follower=request.user).count()
         following = Follow.objects.filter(follower=request.user).select_related('vendor')

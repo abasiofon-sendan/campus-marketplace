@@ -12,11 +12,19 @@ import time
 import uuid
 from decimal import Decimal
 from storage3.exceptions import StorageApiError
+from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 # Create your views here.
 
 class ProductListCreateView(APIView):
     permission_classes = [IsAuthenticated]
 
+    
+    @extend_schema(
+        summary="List Products",
+        description="Retrieve a list of products. Vendors see only their products; buyers see all products.",
+        responses={200: ProductSerializer(many=True)},
+    )
     def get(self, request):
         auth_user = request.user
         # If the authenticated user is a vendor, return only their products.
@@ -35,6 +43,36 @@ class ProductListCreateView(APIView):
             item['vendor_username'] = username
         return Response(data)
         
+
+
+class CreateProductView(APIView):   
+
+    @extend_schema(
+        summary="create product",
+        description="add product to your product inventory",
+        request=ProductSerializer,
+        responses={200:dict},
+        examples=[
+            OpenApiExample(
+                "creating product",
+                summary="Example of creating of product",
+                description="Creating of product",
+                value={
+                    "product_name":"Bags",
+                    "description":"My bags are very cheap and affordable",
+                    "price":2000,
+                    "quantity":20,
+                    "category":"Accessories",
+                    "image_url":"img_2312393493/3u4",
+                    "rating":4,
+                    "view_count":20
+                }
+            )
+            
+
+        ]
+
+    )  
     def post(self, request):
         user = request.user
         print("User is:", user.id)
@@ -136,6 +174,13 @@ class ProductListCreateView(APIView):
 
 class ProductDetailView(APIView):
     permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+            summary="Product Detail",
+            description="Retrieve, update, or delete a product by its ID.",
+            request=ProductSerializer,
+            responses={200: ProductSerializer},
+    )
 
     def get(self,request,pk):
         auth_user = request.user

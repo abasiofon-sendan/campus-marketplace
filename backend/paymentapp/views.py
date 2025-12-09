@@ -8,8 +8,31 @@ from .models import Transaction, VendorWallet,BuyerWallet
 import uuid
 from django.conf import settings
 import requests
+from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
+from drf_spectacular.types import OpenApiTypes
 
 class InitializePaymentView(APIView):
+
+    @extend_schema(
+        summary="Initialize Payment",
+        description="Initialize a payment transaction for a cart item.",
+        request=None,
+        responses={200: dict},
+        parameters=[
+            OpenApiParameter(name='car_id', location=OpenApiParameter.PATH, description='Cart item ID', type=OpenApiTypes.INT),
+            OpenApiParameter(name='quantity', location=OpenApiParameter.QUERY, description='Quantity of the product', type=OpenApiTypes.INT),
+        ],
+        examples=[
+            OpenApiExample(
+                'Initialize Payment Example',
+                summary='Example of initializing a payment',
+                description='An example request to initialize a payment for a cart item.',
+                value={
+                    "quantity": 2,
+                },
+            ),
+        ]
+    )
     def post(self,request,car_id):
         user = request.user
         quantity = request.data.get("quantity")
@@ -72,6 +95,24 @@ class InitializePaymentView(APIView):
     
 
 class VerifyPaymentView(APIView):
+
+    @extend_schema(
+        summary="Verify Payment",
+        description="Verify a payment transaction using its reference.",
+        request=None,
+        responses={200: dict},
+        parameters=[
+            OpenApiParameter(name='reference', location=OpenApiParameter.PATH, description='Payment reference', type=OpenApiTypes.STR),
+        ],
+        examples=[
+            OpenApiExample(
+                'Verify Payment Example',
+                summary='Example of verifying a payment',
+                description='An example request to verify a payment transaction.',
+                value={},
+            ),
+        ]
+    )
     def get(self,request,reference):
 
         headers = {
