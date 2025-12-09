@@ -34,4 +34,5 @@ urlpatterns = [
     path("wallet/",include("wallet.urls")),
     path("customers/",include("customers.urls")),
     path("health/", health_check),
+    path('analytics/', include('analytics.urls')),
 ]

@@ -61,6 +61,7 @@ class InitializePaymentView(APIView):
             Transaction.objects.create(
                 buyer=buyer_wallet,
                 vendor=vendor_wallet,
+                product=product,
                 quantity=quantity,
                 amount=amount,
                 reference=reference,
