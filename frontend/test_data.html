@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Data</title>
+</head>
+<body>
+    <h1>Testing Video Data</h1>
+    <p id="output"></p>
+    
+    <script src="data-initializer.js"></script>
+    <script>
+        // Check if videos were initialized
+        const products = JSON.parse(localStorage.getItem("products")) || []
+        const videosWithUrls = products.filter(p => p.videoUrl)
+        
+        const output = document.getElementById("output")
+        output.innerHTML = `
+            <p>Total products: ${products.length}</p>
+            <p>Products with videos: ${videosWithUrls.length}</p>
+            <hr>
+            <h2>Products with Videos:</h2>
+            ${videosWithUrls.map(p => `
+                <div style="border: 1px solid #ccc; padding: 10px; margin: 10px 0;">
+                    <p><strong>ID:</strong> ${p.id}</p>
+                    <p><strong>Name:</strong> ${p.name}</p>
+                    <p><strong>Vendor ID:</strong> ${p.vendorId}</p>
+                    <p><strong>Video URL:</strong> ${p.videoUrl}</p>
+                    <p><strong>Comments:</strong> ${p.comments ? p.comments.length : 0}</p>
+                    <p><strong>Likes:</strong> ${p.likes}</p>
+                    <p><strong>Views:</strong> ${p.viewCount}</p>
+                </div>
+            `).join("")}
+        `
+    </script>
+</body>
+</html>

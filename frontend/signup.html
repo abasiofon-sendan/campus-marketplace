@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Upstart Marketplace</title>
+    <link rel="stylesheet" href="signup.css">
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-card">
+            <div class="logo">
+                <span class="logo-icon">↑</span>
+                <h1>Upstart</h1>
+            </div>
+            
+            <form id="signupForm">
+                <h2>Create Account</h2>
+                <p class="subtitle">Join our marketplace community</p>
+                
+                <div class="form-group">
+                    <label for="username">Username</label>
+                    <input 
+                        type="text" 
+                        id="username" 
+                        name="username" 
+                        placeholder="Choose a username"
+                        required
+                    >
+                    <span class="error-message" id="usernameError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="phone">Phone Number</label>
+                    <input 
+                        type="tel" 
+                        id="phone" 
+                        name="phone" 
+                        placeholder="10-15 digits"
+                        required
+                    >
+                    <span class="error-message" id="phoneError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        placeholder="your@email.com"
+                        required
+                    >
+                    <span class="error-message" id="emailError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="university">University</label>
+                    <input 
+                        type="text" 
+                        id="university" 
+                        name="university" 
+                        placeholder="Your university"
+                        required
+                    >
+                    <span class="error-message" id="universityError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="department">Department</label>
+                    <input 
+                        type="text" 
+                        id="department" 
+                        name="department" 
+                        placeholder="Your department"
+                        required
+                    >
+                    <span class="error-message" id="departmentError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="role">Role</label>
+                    <select id="role" name="role" required>
+                        <option value="">Select a role</option>
+                        <option value="customer">Customer</option>
+                        <option value="vendor">Vendor</option>
+                    </select>
+                    <span class="error-message" id="roleError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        placeholder="At least 6 characters"
+                        required
+                    >
+                    <span class="error-message" id="passwordError"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="confirmPassword">Confirm Password</label>
+                    <input 
+                        type="password" 
+                        id="confirmPassword" 
+                        name="confirmPassword" 
+                        placeholder="Confirm your password"
+                        required
+                    >
+                    <span class="error-message" id="confirmPasswordError"></span>
+                </div>
+
+                <button type="submit" class="btn-primary">Create Account</button>
+                <div class="success-message" id="signupSuccess"></div>
+            </form>
+
+            <div class="auth-toggle">
+                <p>Already have an account? 
+                    <a href="login.html" class="toggle-link">Login</a>
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script src="signup.js"></script>
+</body>
+</html>

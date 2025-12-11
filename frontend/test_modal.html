@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Modal</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body { margin: 0; padding: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Click button to open video modal</h1>
+    <button onclick="testModal()">Open Modal</button>
+    
+    <script src="data-initializer.js"></script>
+    <script src="video-viewer.js"></script>
+    
+    <script>
+        function testModal() {
+            // Get vendor 101's products with videos
+            const products = JSON.parse(localStorage.getItem("products")) || []
+            const videosWithUrls = products.filter(p => p.vendorId === 101 && p.videoUrl)
+            
+            console.log("Videos found:", videosWithUrls.length)
+            console.log("Videos:", videosWithUrls)
+            
+            if (videosWithUrls.length > 0) {
+                initVideoViewer(videosWithUrls, 0)
+            }
+        }
+    </script>
+</body>
+</html>

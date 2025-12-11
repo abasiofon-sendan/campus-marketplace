@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Profile - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="vendor-profile.css">
+</head>
+<body>
+    <!-- Removed custom navbar - now uses shared navbar injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="vendor-container">
+            <!-- Profile Card -->
+            <div class="profile-section">
+                <div class="vendor-header">
+                    <img id="vendorImage" src="/placeholder.svg?height=120&width=120" alt="Vendor" class="vendor-avatar">
+                    <div class="vendor-header-info">
+                        <h1 id="vendorName"></h1>
+                        <p id="vendorUniversity"></p>
+                        <p id="vendorDepartment"></p>
+                        <div class="vendor-rating">
+                            <span class="stars" id="vendorRating">★★★★★</span>
+                            <span id="reviewCount">(0 reviews)</span>
+                        </div>
+                    </div>
+                    <button class="btn-secondary" id="contactBtn">Contact Vendor</button>
+                </div>
+
+                <!-- About Section -->
+                <div class="about-section">
+                    <h3>About This Seller</h3>
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <span class="stat-label">Total Sales</span>
+                            <span class="stat-value" id="totalSales">0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Rating</span>
+                            <span class="stat-value" id="avgRating">0.0</span>
+                        </div>
+                        <div class="stat-card">
+                            <span class="stat-label">Products</span>
+                            <span class="stat-value" id="productCount">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Added videos section for vendor content -->
+            <div class="videos-section" id="videosSection" style="display: none;">
+                <h2>Product Videos & Content</h2>
+                <div class="videos-grid" id="videosGrid">
+                    <!-- Videos will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <div class="products-section">
+                <h2>Products</h2>
+                <div class="products-grid" id="productsGrid">
+                    <!-- Products will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content product-details-modal">
+            <button class="modal-close" id="closeProductModal">✕</button>
+            
+            <div class="product-details-container">
+                <!-- Image Gallery -->
+                <div class="product-gallery">
+                    <div class="gallery-main">
+                        <img id="galleryMainImage" src="/placeholder.svg" alt="Product" class="main-image">
+                    </div>
+                </div>
+
+                <!-- Product Info -->
+                <div class="product-info">
+                    <h1 id="productName"></h1>
+                    
+                    <div class="product-price">
+                        <span class="price" id="productPrice"></span>
+                    </div>
+
+                    <div class="product-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Available:</span>
+                            <span class="stat-value" id="quantityAvailable">0</span>
+                        </div>
+                    </div>
+
+                    <div class="product-description">
+                        <h3>Description</h3>
+                        <p id="productDescription"></p>
+                    </div>
+
+                    <div class="product-details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Color:</span>
+                            <span class="detail-value" id="productColor"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value" id="productLocation"></span>
+                        </div>
+                    </div>
+
+                    <div class="product-actions">
+                        <button class="btn-primary" id="addToCartBtn">Add to Cart</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Added shared-nav.js to inject universal navbar -->
+    <script src="shared-nav.js"></script>
+    <!-- Added data-initializer.js to ensure vendor profile page has access to dummy data -->
+    <script src="data-initializer.js"></script>
+    <!-- Added video viewer modal for TikTok-style experience -->
+    <script src="video-viewer.js"></script>
+    <script src="vendor-profile.js"></script>
+</body>
+</html>

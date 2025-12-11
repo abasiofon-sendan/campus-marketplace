@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Analytics - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="analytics.css">
+</head>
+<body>
+    <!-- Navbar will be injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="analytics-container">
+            <h1>Vendor Analytics Dashboard</h1>
+
+            <!-- KPI Cards -->
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Sales</div>
+                    <div class="kpi-value" id="totalSales">0</div>
+                    <div class="kpi-currency">Revenue: $<span id="totalRevenue">0.00</span></div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Total Views</div>
+                    <div class="kpi-value" id="totalViews">0</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Average Rating</div>
+                    <div class="kpi-value" id="avgRating">0.0</div>
+                    <div class="stars" id="ratingStars">★★★★★</div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-label">Products Listed</div>
+                    <div class="kpi-value" id="productCount">0</div>
+                </div>
+            </div>
+
+            <!-- Charts Section -->
+            <div class="charts-grid">
+                <!-- Sales Chart -->
+                <div class="chart-card">
+                    <h3>Sales Trend (Last 30 Days)</h3>
+                    <div class="chart" id="salesChart">
+                        <canvas id="salesCanvas" width="300" height="150"></canvas>
+                    </div>
+                </div>
+
+                <!-- Category Sales -->
+                <div class="chart-card">
+                    <h3>Sales by Category</h3>
+                    <div class="chart" id="categoryChart">
+                        <canvas id="categoryCanvas" width="300" height="150"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Products -->
+            <div class="analytics-card">
+                <h3>Top 5 Products</h3>
+                <table class="analytics-table">
+                    <thead>
+                        <tr>
+                            <th>Product Name</th>
+                            <th>Views</th>
+                            <th>Sales</th>
+                            <th>Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody id="topProductsTable">
+                        <!-- Products will be inserted here -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="analytics-card">
+                <h3>Recent Orders</h3>
+                <div class="orders-list" id="ordersList">
+                    <!-- Orders will be inserted here -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content product-details-modal">
+            <button class="modal-close" id="closeProductModal">✕</button>
+            <div class="product-details-container" id="productDetailsContainer">
+                <!-- Product details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Added shared nav and main JS scripts -->
+    <script src="shared-nav.js"></script>
+    <script src="data-initializer.js"></script>
+    <script src="analytics.js"></script>
+</body>
+</html>

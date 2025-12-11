@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Modal 2</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        .info { background: #f0f0f0; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Video Modal Test</h1>
+    <button onclick="testModal()">Open Modal</button>
+    <div class="info" id="info"></div>
+    
+    <script src="data-initializer.js"></script>
+    <script src="video-viewer.js"></script>
+    
+    <script>
+        function testModal() {
+            const info = document.getElementById("info")
+            
+            // Get vendor 101's products with videos
+            const products = JSON.parse(localStorage.getItem("products")) || []
+            const videosWithUrls = products.filter(p => p.vendorId === 101 && p.videoUrl)
+            
+            info.innerHTML = `
+                <p><strong>Total products:</strong> ${products.length}</p>
+                <p><strong>Vendor 101 products:</strong> ${products.filter(p => p.vendorId === 101).length}</p>
+                <p><strong>Videos with URLs:</strong> ${videosWithUrls.length}</p>
+                <hr>
+                <p><strong>Before opening modal:</strong></p>
+                <p>DOM videoViewerModal exists: ${!!document.getElementById("videoViewerModal")}</p>
+            `
+            
+            if (videosWithUrls.length > 0) {
+                console.log("Calling initVideoViewer with:", videosWithUrls)
+                initVideoViewer(videosWithUrls, 0)
+                
+                setTimeout(() => {
+                    const modal = document.getElementById("videoViewerModal")
+                    info.innerHTML += `
+                        <hr>
+                        <p><strong>After opening modal:</strong></p>
+                        <p>DOM videoViewerModal exists: ${!!modal}</p>
+                        <p>Modal classes: ${modal ? modal.className : 'N/A'}</p>
+                        <p>Modal display style: ${modal ? window.getComputedStyle(modal).display : 'N/A'}</p>
+                        <p>Modal visible: ${modal ? window.getComputedStyle(modal).visibility : 'N/A'}</p>
+                    `
+                }, 100)
+            } else {
+                info.innerHTML += "<p style='color: red;'><strong>No videos found!</strong></p>"
+            }
+        }
+    </script>
+</body>
+</html>

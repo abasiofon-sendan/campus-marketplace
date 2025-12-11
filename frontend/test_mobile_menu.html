@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mobile Menu</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body { 
+            margin: 0; 
+            padding: 0; 
+            font-family: Arial, sans-serif;
+        }
+        .content {
+            margin-top: 80px;
+            padding: 20px;
+        }
+        .screen-size {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: #333;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <script src="shared-nav.js"></script>
+    <script src="data-initializer.js"></script>
+    
+    <div class="content">
+        <h1>Mobile Menu Test</h1>
+        <p>Resize your browser to see the mobile menu (≤768px width)</p>
+        <p>Click the ☰ button to toggle the mobile menu</p>
+        <hr>
+        <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+    </div>
+    
+    <div class="screen-size" id="screenSize"></div>
+    
+    <script>
+        function updateScreenSize() {
+            document.getElementById("screenSize").textContent = window.innerWidth + "px";
+        }
+        updateScreenSize();
+        window.addEventListener("resize", updateScreenSize);
+    </script>
+</body>
+</html>

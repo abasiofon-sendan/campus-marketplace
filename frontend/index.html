@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upstart - Student Marketplace</title>
+    <link rel="stylesheet" href="index.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <!-- Removed duplicate navbar - using shared-nav.js instead -->
+    
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Category Filter -->
+        <section class="category-filter">
+            <div class="filter-container">
+                <button class="filter-btn active" data-category="all">All Products</button>
+                <button class="filter-btn" data-category="electronics">Electronics</button>
+                <button class="filter-btn" data-category="books">Books</button>
+                <button class="filter-btn" data-category="furniture">Furniture</button>
+                <button class="filter-btn" data-category="clothing">Clothing</button>
+                <button class="filter-btn" data-category="sports">Sports</button>
+            </div>
+            <div class="sort-container">
+                <select id="sortSelect" class="sort-select">
+                    <option value="newest">Newest</option>
+                    <option value="price-low">Price: Low to High</option>
+                    <option value="price-high">Price: High to Low</option>
+                    <option value="rating">Highest Rated</option>
+                </select>
+            </div>
+        </section>
+
+        <!-- Products Grid -->
+        <section class="products-section">
+            <div class="products-grid" id="productsGrid">
+                <!-- Products will be inserted here -->
+            </div>
+        </section>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content product-details-modal">
+            <button class="modal-close" id="closeProductModal">✕</button>
+            
+            <div class="product-details-container">
+                <!-- Image Gallery -->
+                <div class="product-gallery">
+                    <div class="gallery-main">
+                        <img id="galleryMainImage" src="/placeholder.svg" alt="Product" class="main-image">
+                    </div>
+                    <div class="gallery-thumbnails" id="galleryThumbnails">
+                        <!-- Thumbnails will be inserted here -->
+                    </div>
+                </div>
+
+                <!-- Product Info -->
+                <div class="product-info">
+                    <h1 id="productName"></h1>
+                    
+                    <div class="product-price">
+                        <span class="price" id="productPrice"></span>
+                    </div>
+
+                    <div class="product-rating">
+                        <span class="stars" id="productRating">★★★★★</span>
+                        <span class="review-count" id="reviewCount">(0 reviews)</span>
+                    </div>
+
+                    <!-- Added likes and engagement section -->
+                    <div class="product-engagement">
+                        <button class="like-btn" id="likeBtn" title="Like this product">
+                            ♡ <span id="likesCount">0</span> Likes
+                        </button>
+                        <span class="engagement-stat">
+                            👁 <span id="viewCount">0</span> Views
+                        </span>
+                    </div>
+
+                    <div class="product-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Available:</span>
+                            <span class="stat-value" id="quantityAvailable">0</span>
+                        </div>
+                    </div>
+
+                    <div class="product-description">
+                        <h3>Description</h3>
+                        <p id="productDescription"></p>
+                    </div>
+
+                    <div class="product-details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Color:</span>
+                            <span class="detail-value" id="productColor"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value" id="productLocation"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Category:</span>
+                            <span class="detail-value" id="productCategory"></span>
+                        </div>
+                    </div>
+
+                    <!-- Added reviews/comments section -->
+                    <div class="reviews-section">
+                        <h3>Customer Reviews</h3>
+                        <div class="comments-list" id="commentsList">
+                            <p class="no-comments">No reviews yet</p>
+                        </div>
+                    </div>
+
+                    <!-- Vendor Section -->
+                    <div class="vendor-section">
+                        <h3>Seller Information</h3>
+                        <div class="vendor-card">
+                            <div class="vendor-profile">
+                                <img id="vendorImage" src="/placeholder.svg?height=80&width=80" alt="Vendor" class="vendor-avatar">
+                                <div class="vendor-info">
+                                    <h4 id="vendorName"></h4>
+                                    <p id="vendorEmail"></p>
+                                    <div class="vendor-rating">
+                                        <span class="stars" id="vendorRating">★★★★★</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="vendor-actions">
+                                <button class="btn-secondary" id="viewVendorBtn">View Profile</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="product-actions">
+                        <div class="quantity-selector">
+                            <label for="cartQuantityInput">Quantity:</label>
+                            <input type="number" id="cartQuantityInput" min="1" value="1" class="quantity-input">
+                        </div>
+                        <button class="btn-primary" id="addToCartBtn">Add to Cart</button>
+                        <button class="btn-secondary" id="contactVendorBtn">Contact Vendor</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Chat Bubble -->
+    <div class="chat-bubble" id="chatBubble">
+        <button class="chat-bubble-btn" id="chatBubbleBtn">💬</button>
+        <div class="chat-widget" id="chatWidget">
+            <div class="chat-header">
+                <h3>Upstart Assistant</h3>
+                <button class="close-chat" id="closeChatWidget">✕</button>
+            </div>
+            <div class="chat-messages" id="chatMessages">
+                <div class="message bot-message">
+                    <p>Hi! How can I help you today?</p>
+                </div>
+            </div>
+            <div class="chat-input-area">
+                <input type="text" id="chatInput" placeholder="Type a message..." class="chat-input">
+                <button id="chatSendBtn" class="chat-send-btn">→</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-content">
+            <div class="footer-section">
+                <h4>About</h4>
+                <a href="#about">About Upstart</a>
+                <a href="#careers">Careers</a>
+                <a href="#blog">Blog</a>
+            </div>
+            <div class="footer-section">
+                <h4>Support</h4>
+                <a href="#contact">Contact Us</a>
+                <a href="#faq">FAQ</a>
+                <a href="#help">Help Center</a>
+            </div>
+            <div class="footer-section">
+                <h4>Legal</h4>
+                <a href="#terms">Terms of Service</a>
+                <a href="#privacy">Privacy Policy</a>
+                <a href="#cookies">Cookies</a>
+            </div>
+            <div class="footer-section">
+                <h4>Follow Us</h4>
+                <a href="#facebook">Facebook</a>
+                <a href="#twitter">Twitter</a>
+                <a href="#instagram">Instagram</a>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2025 Upstart Marketplace. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <!-- Load shared navigation first, then page-specific scripts -->
+    <script src="shared-nav.js"></script>
+    <script src="data-initializer.js"></script>
+    <script src="index.js"></script>
+</body>
+</html>

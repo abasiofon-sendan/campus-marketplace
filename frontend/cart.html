@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shopping Cart - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="cart.css">
+</head>
+<body>
+    <!-- Navbar will be injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="cart-container">
+            <!-- Cart Items -->
+            <div class="cart-items-section">
+                <h2>Shopping Cart</h2>
+                <div class="cart-items-list" id="cartItemsList">
+                    <!-- Items will be inserted here -->
+                </div>
+            </div>
+
+            <!-- Cart Summary -->
+            <div class="cart-summary">
+                <h3>Order Summary</h3>
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span id="subtotal">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Shipping</span>
+                    <span id="shipping">$0.00</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax</span>
+                    <span id="tax">$0.00</span>
+                </div>
+                <div class="summary-divider"></div>
+                <div class="summary-row total">
+                    <span>Total</span>
+                    <span id="total">$0.00</span>
+                </div>
+                <button class="btn-primary" id="checkoutAllBtn">Checkout All</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content product-details-modal">
+            <button class="modal-close" id="closeProductModal">✕</button>
+            <div class="product-details-container" id="productDetailsContainer">
+                <!-- Product details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Added shared nav and main JS scripts -->
+    <script src="shared-nav.js"></script>
+    <script src="data-initializer.js"></script>
+    <script src="cart.js"></script>
+</body>
+</html>

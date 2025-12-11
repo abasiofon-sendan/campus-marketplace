@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wallet - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="wallet.css">
+</head>
+<body>
+    <!-- Removed custom navbar - now uses shared navbar injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="wallet-container">
+            <!-- Balance Card -->
+            <div class="balance-card">
+                <h2>Wallet Balance</h2>
+                <div class="balance-amount" id="balanceAmount">$0.00</div>
+                <p class="balance-label">Available for withdrawal</p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="action-buttons">
+                <button class="btn-primary" id="addMoneyBtn">+ Add Money</button>
+                <button class="btn-secondary" id="withdrawBtn">Withdraw Money</button>
+            </div>
+
+            <!-- Transaction History -->
+            <div class="transactions-card">
+                <h3>Transaction History</h3>
+                <div class="transactions-list" id="transactionsList">
+                    <p class="empty-message">No transactions yet</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Add Money Drawer -->
+    <div class="drawer" id="addMoneyDrawer">
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h3>Add Money to Wallet</h3>
+                <button class="close-btn" onclick="closeDrawer('addMoneyDrawer')">✕</button>
+            </div>
+            <div class="drawer-body">
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="addMoneyAmount" placeholder="Enter amount" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Payment Method</label>
+                    <select id="paymentMethod">
+                        <option>Credit Card</option>
+                        <option>Debit Card</option>
+                        <option>Bank Transfer</option>
+                    </select>
+                </div>
+                <button class="btn-primary" id="submitAddMoney">Add Money</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Withdraw Drawer -->
+    <div class="drawer" id="withdrawDrawer">
+        <div class="drawer-content">
+            <div class="drawer-header">
+                <h3>Withdraw Money</h3>
+                <button class="close-btn" onclick="closeDrawer('withdrawDrawer')">✕</button>
+            </div>
+            <div class="drawer-body">
+                <div class="form-group">
+                    <label>Amount</label>
+                    <input type="number" id="withdrawAmount" placeholder="Enter amount" min="1">
+                </div>
+                <div class="form-group">
+                    <label>Bank Account</label>
+                    <input type="text" id="bankAccount" placeholder="Enter account number">
+                </div>
+                <div class="form-group">
+                    <label>Routing Number</label>
+                    <input type="text" id="routingNumber" placeholder="Enter routing number">
+                </div>
+                <button class="btn-primary" id="submitWithdraw">Withdraw</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="drawer-overlay" id="drawerOverlay" onclick="closeAllDrawers()"></div>
+
+    <!-- Added shared-nav.js to inject universal navbar -->
+    <script src="shared-nav.js"></script>
+    <script src="data-initializer.js"></script>
+    <script src="wallet.js"></script>
+</body>
+</html>

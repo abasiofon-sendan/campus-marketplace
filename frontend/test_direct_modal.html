@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Direct Modal Test</title>
+    <link rel="stylesheet" href="index.css">
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        .test-section { background: #f0f0f0; padding: 15px; margin-bottom: 15px; border-radius: 5px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin-right: 10px; }
+    </style>
+</head>
+<body>
+    <h1>Direct Video Modal Test</h1>
+    
+    <div class="test-section">
+        <h2>Step 1: Initialize Data</h2>
+        <button onclick="initData()">Initialize Dummy Data</button>
+        <p id="step1-output"></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 2: Test Modal Creation</h2>
+        <button onclick="testCreateModal()">Create Modal</button>
+        <p id="step2-output"></p>
+    </div>
+    
+    <div class="test-section">
+        <h2>Step 3: Test Full Video Viewer</h2>
+        <button onclick="testFullViewer()">Open Video Viewer</button>
+        <p id="step3-output"></p>
+    </div>
+    
+    <hr>
+    <div class="test-section">
+        <h2>Console Output</h2>
+        <pre id="console-output"></pre>
+    </div>
+    
+    <script src="data-initializer.js"></script>
+    <script src="video-viewer.js"></script>
+    
+    <script>
+        // Capture console.log
+        const consoleLogs = []
+        const originalLog = console.log
+        console.log = function(...args) {
+            consoleLogs.push(args.join(' '))
+            document.getElementById('console-output').textContent = consoleLogs.join('\n')
+            originalLog.apply(console, args)
+        }
+        
+        function initData() {
+            const output = document.getElementById('step1-output')
+            initializeDummyData()
+            const products = JSON.parse(localStorage.getItem('products')) || []
+            const videosCount = products.filter(p => p.videoUrl).length
+            output.innerHTML = `<strong>✓ Data initialized!</strong><br>Total products: ${products.length}<br>Products with videos: ${videosCount}`
+        }
+        
+        function testCreateModal() {
+            const output = document.getElementById('step2-output')
+            const modal = document.createElement('div')
+            modal.id = 'testModal'
+            modal.className = 'video-viewer-modal active'
+            modal.innerHTML = '<div class="video-viewer-container"><p style="color: white;">Test Modal Content</p></div>'
+            document.body.appendChild(modal)
+            
+            const testModal = document.getElementById('testModal')
+            const style = window.getComputedStyle(testModal)
+            output.innerHTML = `<strong>✓ Modal created!</strong><br>Display: ${style.display}<br>Background: ${style.background}`
+            
+            setTimeout(() => {
+                document.getElementById('testModal').remove()
+            }, 3000)
+        }
+        
+        function testFullViewer() {
+            const output = document.getElementById('step3-output')
+            initData()
+            
+            const products = JSON.parse(localStorage.getItem('products')) || []
+            const videosWithUrls = products.filter(p => p.vendorId === 101 && p.videoUrl)
+            
+            output.innerHTML = `<strong>Found ${videosWithUrls.length} videos for vendor 101</strong><br>`
+            
+            if (videosWithUrls.length > 0) {
+                output.innerHTML += `First video: ${videosWithUrls[0].name}<br><br>`
+                output.innerHTML += '<button onclick="initVideoViewer(window.testVideos, 0)">Click to open video viewer</button>'
+                window.testVideos = videosWithUrls
+            }
+        }
+    </script>
+</body>
+</html>

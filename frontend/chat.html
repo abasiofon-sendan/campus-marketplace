@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Messages - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="chat.css">
+</head>
+<body>
+    <!-- Added universal navbar to chat page -->
+    <!-- Removed custom navbar - now uses shared navbar injected by shared-nav.js -->
+
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Messages</h2>
+            </div>
+            <div class="conversations-list" id="conversationsList">
+                <!-- Conversations will be inserted here -->
+            </div>
+        </div>
+
+        <!-- Main Chat -->
+        <div class="chat-main">
+            <div class="chat-header-empty">
+                <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle conversations">
+                    ☰
+                </button>
+            </div>
+            <div class="chat-empty" id="chatEmpty">
+                <div class="empty-icon">💬</div>
+                <p>Select a conversation to start chatting</p>
+            </div>
+
+            <div class="chat-view" id="chatView" style="display: none;">
+                <div class="chat-header">
+                    <div class="chat-user-info">
+                        <img id="chatUserAvatar" src="/placeholder.svg?height=40&width=40" alt="User" class="chat-avatar">
+                        <div>
+                            <div class="chat-user-name" id="chatUserName"></div>
+                            <div class="chat-user-status">Online</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="messages-list" id="messagesList">
+                    <!-- Messages will be inserted here -->
+                </div>
+
+                <div class="message-input-area">
+                    <input type="text" id="messageInput" placeholder="Type a message..." class="message-input">
+                    <button id="sendBtn" class="send-btn">→</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Added shared-nav.js to inject universal navbar -->
+    <!-- Added data-initializer.js to ensure chat page has access to dummy data -->
+    <script src="shared-nav.js"></script>
+    <script src="data-initializer.js"></script>
+    <script src="chat.js"></script>
+</body>
+</html>
