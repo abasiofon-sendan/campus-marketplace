@@ -19,15 +19,15 @@
                 <p class="subtitle">Sign in to your account</p>
                 
                 <div class="form-group">
-                    <label for="loginEmail">Phone or Email</label>
+                    <label for="loginEmail">Email</label>
                     <input 
                         type="text" 
                         id="loginEmail" 
                         name="loginEmail" 
-                        placeholder="Enter your phone or email"
+                        placeholder="Enter your email"
                         required
                     >
-                    <span class="error-message" id="loginEmailError"></span>
+                    
                 </div>
 
                 <div class="form-group">
@@ -39,7 +39,7 @@
                         placeholder="Enter your password"
                         required
                     >
-                    <span class="error-message" id="loginPasswordError"></span>
+                    
                 </div>
 
                 <button type="submit" class="btn-primary">Login</button>
@@ -55,5 +55,7 @@
     </div>
 
     <script src="login.js"></script>
+    <!-- Toast container for global toasts -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>

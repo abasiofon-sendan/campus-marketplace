@@ -1,103 +1,175 @@
 // Initialize app data structure if not exists
-function initializeAppData() {
-  if (!localStorage.getItem("users")) {
-    localStorage.setItem("users", JSON.stringify([]))
-  }
-  if (!localStorage.getItem("currentUser")) {
-    localStorage.setItem("currentUser", JSON.stringify(null))
-  }
-}
+// function initializeAppData() {
+//   if (!localStorage.getItem("users")) {
+//     localStorage.setItem("users", JSON.stringify([]))
+//   }
+//   if (!localStorage.getItem("currentUser")) {
+//     localStorage.setItem("currentUser", JSON.stringify(null))
+//   }
+// }
+
+// document.addEventListener("DOMContentLoaded", () => {
+// })
 
 // Validate email format
 function isValidEmail(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
 }
 
-// Validate phone format
-function isValidPhone(phone) {
-  return /^\d{10,15}$/.test(phone.replace(/\D/g, ""))
-}
+// Simple toast utility (global showToast)
+(function () {
+  const container = document.getElementById('toast-container') || (() => {
+    const el = document.createElement('div');
+    el.id = 'toast-container';
+    document.body.appendChild(el);
+    return el;
+  })();
+
+  window.showToast = function (message, type = 'info', options = {}) {
+    const timeout = options.timeout ?? 3500;
+    const toast = document.createElement('div');
+    toast.className = `toast ${type}`;
+    toast.setAttribute('role', 'status');
+    toast.setAttribute('aria-live', 'polite');
+
+    const text = document.createElement('div');
+    text.textContent = message;
+    toast.appendChild(text);
+
+    const close = document.createElement('button');
+    close.className = 'close-btn';
+    close.type = 'button';
+    close.textContent = '×';
+    close.addEventListener('click', () => dismiss());
+    toast.appendChild(close);
+
+    let removed = false;
+    function dismiss() {
+      if (removed) return;
+      removed = true;
+      toast.classList.remove('show');
+      toast.addEventListener('transitionend', () => toast.remove(), { once: true });
+    }
+
+    container.appendChild(toast);
+    // Force reflow so transition works
+    requestAnimationFrame(() => toast.classList.add('show'));
+
+    if (timeout > 0) {
+      setTimeout(dismiss, timeout);
+    }
+    return {
+      dismiss
+    };
+  };
+})();
+
+
 
 // Validate login credentials
-function validateLogin(emailOrPhone, password) {
-  const errors = {}
+function validateLogin(email, password) {
+  const errors = {};
 
-  if (!emailOrPhone.trim()) {
-    errors.email = "Phone or email is required"
-  } else if (!isValidEmail(emailOrPhone) && !isValidPhone(emailOrPhone)) {
-    errors.email = "Enter a valid email or phone number"
+  if (!email || !email.trim()) {
+    errors.email = "Phone or email is required";
+  } else if (!isValidEmail(email)) {
+    errors.email = "Enter a valid email";
   }
 
   if (!password) {
-    errors.password = "Password is required"
+    errors.password = "Password is required";
   } else if (password.length < 6) {
-    errors.password = "Password must be at least 6 characters"
+    errors.password = "Password must be at least 6 characters";
   }
 
-  return errors
+  return errors;
 }
 
 // Handle form submission
-document.getElementById("loginForm").addEventListener("submit", (e) => {
+document.getElementById("loginForm").addEventListener("submit", async (e) => {
   e.preventDefault()
 
-  const emailOrPhone = document.getElementById("loginEmail").value
+  const email = document.getElementById("loginEmail").value
   const password = document.getElementById("loginPassword").value
 
-  // Clear previous errors
-  document.getElementById("loginEmailError").textContent = ""
-  document.getElementById("loginPasswordError").textContent = ""
+  // Clear previous success UI
+  document.getElementById("loginSuccess").classList.remove("show")
   document.getElementById("loginSuccess").classList.remove("show")
 
   // Validate input
-  const errors = validateLogin(emailOrPhone, password)
+  const errors = validateLogin(email, password);
 
   if (Object.keys(errors).length > 0) {
-    if (errors.email) {
-      document.getElementById("loginEmailError").textContent = errors.email
+    Object.keys(errors).forEach((k) => showToast(errors[k], "error"));
+    return;
+  }
+  
+
+  const loginInfo = {email, password};
+
+  try {
+    const response = await fetch('https://market-api-5lg1.onrender.com/auth/jwt/create/', {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify(loginInfo)
+    });
+
+    if (!response.ok) {
+      if (response.status === 401) {
+        // invalid credentials
+        showToast("Invalid credentials", "error");
+      } else {
+        showToast("Login failed — please try again", "error");
+      }
+      return;
     }
-    if (errors.password) {
-      document.getElementById("loginPasswordError").textContent = errors.password
+
+    const data = await response.json();
+    // optional: store token / user info here if you want
+    if (data && (data.access || data.token)) {
+      localStorage.setItem('authToken', data.access || data.refresh);
     }
-    return
+
+    // Success
+    showToast("Login successful! Redirecting...", "success", { timeout: 2000 });
+    // document.getElementById("loginSuccess").textContent = "Login successful! Redirecting...";
+    // document.getElementById("loginSuccess").classList.add("show");
+
+    // Redirect after 1 second
+    setTimeout(() => {
+      window.location.href = "index.html";
+    }, 3000);
+
+    return;
+  } catch (err) {
+    console.error(err);
+    showToast("Network error — please try again", "error");
+    return;
   }
 
   // Get users from localStorage
-  const users = JSON.parse(localStorage.getItem("users")) || []
+  // const users = JSON.parse(localStorage.getItem("users")) || []
 
   // Check if user exists
-  const user = users.find((u) => {
-    const emailMatch = u.email === emailOrPhone
-    const phoneMatch = u.phone === emailOrPhone
-    return emailMatch || phoneMatch
-  })
+  // const user = users.find((u) => {
+  //   const emailMatch = u.email === emailOrPhone
+  //   const phoneMatch = u.phone === emailOrPhone
+  //   return emailMatch || phoneMatch
+  // })
 
-  if (!user) {
-    document.getElementById("loginEmailError").textContent = "User not found"
-    return
-  }
+  // if (!user) {
+  //   document.getElementById("loginEmailError").textContent = "User not found"
+  //   return
+  // }
 
-  if (user.password !== password) {
-    document.getElementById("loginPasswordError").textContent = "Incorrect password"
-    return
-  }
-
-  // Login successful
-  document.getElementById("loginSuccess").textContent = "Login successful! Redirecting..."
-  document.getElementById("loginSuccess").classList.add("show")
+  // if (user.password !== password) {
+  //   document.getElementById("loginPasswordError").textContent = "Incorrect password"
+  //   return
+  // }
 
   // Store current user
-  const loggedInUser = { ...user }
-  delete loggedInUser.password
-  localStorage.setItem("currentUser", JSON.stringify(loggedInUser))
-
-  // Redirect after 1 second
-  setTimeout(() => {
-    window.location.href = "index.html"
-  }, 1000)
+  // const loggedInUser = { ...user }
+  // delete loggedInUser.password
+  // localStorage.setItem("currentUser", JSON.stringify(loggedInUser))
 })
 
-// Initialize on page load
-document.addEventListener("DOMContentLoaded", () => {
-  initializeAppData()
-})
