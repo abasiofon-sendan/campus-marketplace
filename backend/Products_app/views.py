@@ -3,7 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product
+from .models import Product,ProductView
 from .serializers import ProductSerializer
 from rest_framework.permissions import IsAuthenticated
 from .supabase_config import supabase
@@ -14,6 +14,7 @@ from decimal import Decimal
 from storage3.exceptions import StorageApiError
 from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from django.db.models import F
 # Create your views here.
 
 class ProductListCreateView(APIView):
@@ -191,8 +192,11 @@ class ProductDetailView(APIView):
             return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)
         data = serializer.data
-        data['vendor_username'] = product.vendor_name.username if product.vendor_name else None
-        product.view_count += 1
+        data['vendor_name'] = product.vendor_name.username if product.vendor_name else None
+        if auth_user != product.vendor_name:
+            _, created = ProductView.objects.get_or_create(product=product, user=auth_user)
+            if created:
+                Product.objects.filter(pk=pk).update(view_count=F('view_count') + 1)
         return Response(data)
 
     
