@@ -27,7 +27,7 @@
                         placeholder="Choose a username"
                         required
                     >
-                    <span class="error-message" id="usernameError"></span>
+                    
                 </div>
 
                 <div class="form-group">
@@ -39,7 +39,7 @@
                         placeholder="10-15 digits"
                         required
                     >
-                    <span class="error-message" id="phoneError"></span>
+                    
                 </div>
 
                 <div class="form-group">
@@ -51,22 +51,18 @@
                         placeholder="your@email.com"
                         required
                     >
-                    <span class="error-message" id="emailError"></span>
+                    
                 </div>
 
                 <div class="form-group">
                     <label for="university">University</label>
-                    <input 
-                        type="text" 
-                        id="university" 
-                        name="university" 
-                        placeholder="Your university"
-                        required
-                    >
-                    <span class="error-message" id="universityError"></span>
+                    <select id="university" required>
+                        <option value="None">None</option>
+                    </select>
+                    
                 </div>
 
-                <div class="form-group">
+                <!-- <div class="form-group">
                     <label for="department">Department</label>
                     <input 
                         type="text" 
@@ -76,40 +72,46 @@
                         required
                     >
                     <span class="error-message" id="departmentError"></span>
-                </div>
+                </div> -->
 
                 <div class="form-group">
                     <label for="role">Role</label>
                     <select id="role" name="role" required>
                         <option value="">Select a role</option>
-                        <option value="customer">Customer</option>
+                        <option value="buyer">Buyer</option>
                         <option value="vendor">Vendor</option>
                     </select>
-                    <span class="error-message" id="roleError"></span>
+                    
                 </div>
 
                 <div class="form-group">
                     <label for="password">Password</label>
-                    <input 
-                        type="password" 
-                        id="password" 
-                        name="password" 
-                        placeholder="At least 6 characters"
-                        required
-                    >
-                    <span class="error-message" id="passwordError"></span>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            placeholder="At least 6 characters"
+                            required
+                        >
+                        <button type="button" class="password-toggle" data-target="password" aria-label="Show password" aria-pressed="false">Show</button>
+                    </div>
+                    
                 </div>
 
                 <div class="form-group">
                     <label for="confirmPassword">Confirm Password</label>
-                    <input 
-                        type="password" 
-                        id="confirmPassword" 
-                        name="confirmPassword" 
-                        placeholder="Confirm your password"
-                        required
-                    >
-                    <span class="error-message" id="confirmPasswordError"></span>
+                    <div class="password-wrapper">
+                        <input 
+                            type="password" 
+                            id="confirmPassword" 
+                            name="confirmPassword" 
+                            placeholder="Confirm your password"
+                            required
+                        >
+                        <button type="button" class="password-toggle" data-target="confirmPassword" aria-label="Show confirm password" aria-pressed="false">Show</button>
+                    </div>
+                    
                 </div>
 
                 <button type="submit" class="btn-primary">Create Account</button>
@@ -125,5 +127,7 @@
     </div>
 
     <script src="signup.js"></script>
+    <!-- Toast container for global toasts -->
+    <div id="toast-container" aria-live="polite" aria-atomic="true"></div>
 </body>
 </html>
