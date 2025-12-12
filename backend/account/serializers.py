@@ -11,12 +11,13 @@ User = get_user_model()
 class UserCreateSerializer(UserCreateSerializer):
     class Meta(UserCreateSerializer.Meta):
         model = User
-        fields = ("id","email","username", "password","role","institute")
+        fields = ("id","email","username", "password","role","institute", "phone")
 
     def create(self, validate_data):
         email = validate_data.get('email')
         role = validate_data.get('role')
         username = validate_data.get('username')
+        phone = validate_data.get("phone")
 
         email = email.strip() if email else None
 
@@ -29,7 +30,8 @@ class UserCreateSerializer(UserCreateSerializer):
         user = CustomUserModel(
             email=email,
             role=role,
-            username=username
+            username=username,
+            phone=phone
         )
         user.set_password(validate_data['password'])
         user.save()
@@ -51,7 +53,7 @@ class UserCreateSerializer(UserCreateSerializer):
 class UserSerializer(UserSerializer):
     class Meta(UserSerializer.Meta):
         model = User
-        fields = ("id","username","role","email")
+        fields = ("id","username","role","email", "phone")
 
 # class UserProfileSerializer(serializers.ModelSerializer):
 #     class Meta:

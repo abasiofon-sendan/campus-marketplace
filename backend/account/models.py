@@ -18,10 +18,11 @@ ROLE_CHOICES = [
 
 
 class CustomUserModel(AbstractUser):
-    username = models.CharField(max_length=150, unique=False, null=True, blank=True)
+    username = models.CharField(max_length=150, unique=True, null=True, blank=True)
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES)
     institute = models.CharField(max_length=255, null=True, blank=True)
+    phone = models.CharField(max_length=20)
     
 
 
