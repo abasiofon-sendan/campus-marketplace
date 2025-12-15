@@ -5,6 +5,11 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from .models import CustomUserModel
 from paymentapp.models import VendorWallet, BuyerWallet
+import requests
+from Products_app.supabase_config import supabase
+import uuid
+import os
+
 
 User = get_user_model()
 
@@ -51,9 +56,41 @@ class UserCreateSerializer(UserCreateSerializer):
 
 
 class UserSerializer(UserSerializer):
+    profile_picture = serializers.ImageField(
+        write_only=True,
+        required=False
+    )
+
+    # Stored Supabase URL (GET responses)
+    profile_url = serializers.URLField(read_only=True)
     class Meta(UserSerializer.Meta):
         model = User
-        fields = ("id","username","role","email", "phone")
+        fields = ("id", "username", "role", "email", "phone", "institute", "rating", "profile_picture", "profile_url", "bio")
+        read_only_fields = ("id", "username", "role", "email", "phone")
+
+
+    def update(self, instance, validated_data):
+        profile_picture = validated_data.pop("profile_picture", None)
+
+        if profile_picture:
+            instance.profile_url = self.upload_profile_picture(
+                profile_picture
+            )
+        return super().update(instance, validated_data)
+
+    def upload_profile_picture(self, file):
+        file_bytes = file.read()
+        base, ext = os.path.splitext(file.name or "file")
+        unique_name = f"{base}_{uuid.uuid4().hex}{ext}"
+        key = f"profile_pictures/{unique_name}"
+
+        supabase.storage.from_("marketplace").upload(
+            key,
+            file_bytes,
+            {"content-type": file.content_type},
+        )
+
+        return supabase.storage.from_("marketplace").get_public_url(key)
 
 # class UserProfileSerializer(serializers.ModelSerializer):
 #     class Meta:
