@@ -7,7 +7,10 @@ import requests
 from decimal import Decimal
 from django.conf import settings
 from paymentapp.models import BuyerWallet
+from paymentapp.serializers import BuyerWalletSerializer
 from .models import TopUpMOdel
+from rest_framework.permissions import IsAuthenticated
+
 
 
 class TopUpWAlletView(APIView):
@@ -135,4 +138,12 @@ class VerifyTopupView(APIView):
         return Response({"error":"Failed to verifiy TOPUP"},status=status.HTTP_400_BAD_REQUEST)
 
             
+
+
+class GetWalletBalanceView(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request):
+        data = BuyerWallet.objects.get(user=request.user)
+        serializer = BuyerWalletSerializer(data)
+        return Response(serializer.data)
         
