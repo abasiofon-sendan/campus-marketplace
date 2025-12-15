@@ -3,7 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product
+from .models import Product, ProductReviews
 from .serializers import ProductSerializer
 from rest_framework.permissions import IsAuthenticated
 from .supabase_config import supabase
@@ -12,6 +12,7 @@ import time
 import uuid
 from decimal import Decimal
 from storage3.exceptions import StorageApiError
+import httpx
 from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 # Create your views here.
@@ -27,21 +28,11 @@ class ProductListCreateView(APIView):
     )
     def get(self, request):
         auth_user = request.user
-        # If the authenticated user is a vendor, return only their products.
-        # Buyers (and other roles) see all products.
-        user_role = getattr(auth_user, 'role', None)
-        if user_role == 'vendor':
-            products = Product.objects.filter(vendor_name=auth_user)
-        else:
-            products = Product.objects.all()
+        if auth_user.role != "vendor":
+            return Response(status=404)
+        products = Product.objects.filter(vendor_id=auth_user)
         serializer = ProductSerializer(products, many=True)
-        data = serializer.data
-        # replace vendor_name id with the username and add vendor_username for each item
-        for prod, item in zip(products, data):
-            username = prod.vendor_name.username if prod.vendor_name else None
-            item['vendor_name'] = username
-            item['vendor_username'] = username
-        return Response(data)
+        return Response(serializer.data, status=200)
         
 
 
@@ -100,6 +91,7 @@ class CreateProductView(APIView):
                     {"content-type": image.content_type}
                 )
             except StorageApiError as e:
+                # handle duplicate key by retrying with a more unique name
                 status_code = getattr(e, "statusCode", None)
                 msg = str(e)
                 if status_code == 409 or "Duplicate" in msg:
@@ -112,6 +104,15 @@ class CreateProductView(APIView):
                     )
                 else:
                     raise
+            except httpx.ConnectError as e:
+                # Network/DNS issue when contacting Supabase storage
+                err_msg = (
+                    "Unable to connect to Supabase storage service."
+                    " Please check SUPABASE_URL, network/DNS, and that the service is reachable."
+                )
+                # Log detail to console (server logs)
+                print("Supabase connection error:", str(e))
+                return Response({"error": err_msg, "details": str(e)}, status=status.HTTP_502_BAD_GATEWAY)
             # get public url and append (normalize dict/str responses)
             url = supabase.storage.from_('marketplace').get_public_url(key)
             # normalize possible response shapes
@@ -139,7 +140,7 @@ class CreateProductView(APIView):
                 clean_data[key] = value
 
         # ensure vendor and images are set explicitly
-        clean_data['vendor_name'] = user.id
+        clean_data['vendor_id'] = user.id
         clean_data['image_url'] = images_urls
 
         # convert numeric types to expected types
@@ -173,7 +174,7 @@ class CreateProductView(APIView):
         
 
 class ProductDetailView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     @extend_schema(
             summary="Product Detail",
@@ -183,7 +184,7 @@ class ProductDetailView(APIView):
     )
 
     def get(self,request,pk):
-        auth_user = request.user
+        # auth_user = request.user
         try:
             # allow any authenticated user to view product details
             product = Product.objects.get(pk=pk)
@@ -191,27 +192,32 @@ class ProductDetailView(APIView):
             return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)
         data = serializer.data
-        data['vendor_username'] = product.vendor_name.username if product.vendor_name else None
+        reviews = ProductReviews.objects.filter(product_id=data["id"])
+        data["reviews"] = reviews
         product.view_count += 1
+        product.save()
         return Response(data)
 
     
     def put(self,request,pk):   
         auth_user = request.user
+        data = request.data
+        data["vendor_id"] = auth_user.id
+        print(request)
         try:
-            products = Product.objects.filter(pk=pk, vendor_name = auth_user)
+            products = Product.objects.get(pk=pk, vendor_id=auth_user)
         except Product.DoesNotExist:
             return Response({"message":"Product not found"})
-        serializer = ProductSerializer(products,data=request.data)
+        serializer = ProductSerializer(products, data=data)
         if serializer.is_valid():
-            serializer.save(user=auth_user)
-            return Response({"message":"Updated sucessfully"})
-        return Response({"errors":serializer.errors})
+            serializer.save()
+            return Response({"message":"Updated sucessfully"}, status=200)
+        return Response({"errors":serializer.errors}, status=400)
     
     def delete(self,request,pk):
         auth_user=request.user
         try:
-            product= Product.objects.get(pk=pk,user=request.user)
+            product= Product.objects.get(pk=pk,vendor_id=request.user)
         except Product.DoesNotExist:
             return Response({"message":"Product not found"})
         product.delete()
@@ -220,7 +226,7 @@ class ProductDetailView(APIView):
 
 
 class AllProductsView(APIView):
-    permission_classes = [IsAuthenticated]
+    # permission_classes = [IsAuthenticated]
 
     def get(self,request):
         products= Product.objects.all()
