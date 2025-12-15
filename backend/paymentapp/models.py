@@ -6,11 +6,11 @@ User = get_user_model()
 
 class VendorWallet(models.Model):
     vendor=models.OneToOneField(User, on_delete=models.CASCADE, related_name="Vendor")
-    balance=models.PositiveIntegerField()
+    balance=models.PositiveIntegerField(default=0)
 
 class BuyerWallet(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name="Buyer")
-    balance = models.PositiveIntegerField()
+    balance = models.PositiveIntegerField(default=0)
 
 class Transaction(models.Model):
     buyer = models.ForeignKey(BuyerWallet, on_delete=models.SET_NULL, null=True, related_name="buyer_transactions")
