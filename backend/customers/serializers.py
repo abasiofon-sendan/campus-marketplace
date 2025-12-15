@@ -2,15 +2,23 @@ from rest_framework import serializers
 from .models import TopCustomers, TopVendors, VendorContents, VendorProfiles, Follow, ContentLike, ContentReview
 
 class TopCustomersSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='customer.username', read_only=True)
+    institute = serializers.CharField(source='customer.institute', read_only=True)
+    pfp = serializers.CharField(source="customer.profile_url", read_only=True)
     class Meta:
         model = TopCustomers
-        fields = ['customer', 'total_purchases']
+        fields = '__all__'
          
 
 class TopVendorsSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source="vendor.username", read_only=True)
+    institute = serializers.CharField(source="vendor.institute", read_only=True)
+    pfp = serializers.CharField(source="vendor.profile_url", read_only=True)
+    rating = serializers.CharField(source="vendor.rating", read_only=True)
+
     class Meta:
         model = TopVendors
-        fields = ['vendor', 'total_sales']
+        fields = '__all__'
 
 
 class VendorProfilesSerializer(serializers.ModelSerializer):
