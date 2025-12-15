@@ -3,7 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from .models import Product, ProductReviews
+from .models import Product, ProductReviews, ProductView
 from .serializers import ProductSerializer
 from rest_framework.permissions import IsAuthenticated
 from .supabase_config import supabase
@@ -15,6 +15,7 @@ from storage3.exceptions import StorageApiError
 import httpx
 from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
 from drf_spectacular.types import OpenApiTypes
+from django.db.models import F
 # Create your views here.
 
 class ProductListCreateView(APIView):
@@ -194,8 +195,10 @@ class ProductDetailView(APIView):
         data = serializer.data
         reviews = ProductReviews.objects.filter(product_id=data["id"])
         data["reviews"] = reviews
-        product.view_count += 1
-        product.save()
+        if auth_user != product.vendor_id:
+            _, created = ProductView.objects.get_or_create(product=product, user=auth_user)
+            if created:
+                Product.objects.filter(pk=pk).update(view_count=F('view_count') + 1)
         return Response(data)
 
     

@@ -15,6 +15,8 @@ class BuyerWallet(models.Model):
 class Transaction(models.Model):
     buyer = models.ForeignKey(BuyerWallet, on_delete=models.SET_NULL, null=True, related_name="buyer_transactions")
     vendor = models.ForeignKey(VendorWallet, on_delete=models.SET_NULL, null=True, related_name="vendor_transactions")
+    # new product FK (nullable, will not break existing rows)
+    product = models.ForeignKey('Products_app.Product', null=True, blank=True, on_delete=models.SET_NULL, related_name='transactions')
     amount = models.PositiveIntegerField()
     timestamp = models.DateTimeField(auto_now_add=True)
     quantity = models.PositiveIntegerField(default=1)

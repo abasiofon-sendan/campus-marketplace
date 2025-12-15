@@ -26,3 +26,10 @@ class ProductReviews(models.Model):
     rating = models.PositiveIntegerField()
     review = models.TextField()
 
+class ProductView(models.Model):
+    product =models.ForeignKey(Product, on_delete=models.CASCADE, related_name="views")
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('product', 'user')    
