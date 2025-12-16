@@ -11,3 +11,8 @@ class BuyerWalletSerializer(serializers.ModelSerializer):
     class Meta:
         model = BuyerWallet
         fields = '__all__'
+
+class VendorWalletSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VendorWallet
+        fields = '__all__'
