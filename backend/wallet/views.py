@@ -6,8 +6,8 @@ import uuid
 import requests
 from decimal import Decimal
 from django.conf import settings
-from paymentapp.models import BuyerWallet
-from paymentapp.serializers import BuyerWalletSerializer
+from paymentapp.models import BuyerWallet, VendorWallet
+from paymentapp.serializers import BuyerWalletSerializer, VendorWalletSerializer
 from .models import TopUpMOdel
 from rest_framework.permissions import IsAuthenticated
 
@@ -143,7 +143,15 @@ class VerifyTopupView(APIView):
 class GetWalletBalanceView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
-        data = BuyerWallet.objects.get(user=request.user)
-        serializer = BuyerWalletSerializer(data)
+        user = request.user
+        try:
+            if user.role == "buyer":
+                data = BuyerWallet.objects.get(user_id=user)
+                serializer = BuyerWalletSerializer(data)
+            else:
+                data = VendorWallet.objects.get(vendor_id=user)
+                serializer = VendorWalletSerializer(data)
+        except BuyerWallet.DoesNotExist:
+            return Response({"message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
         return Response(serializer.data)
         
