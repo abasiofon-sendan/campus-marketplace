@@ -1,5 +1,5 @@
 from django.db import models
-from paymentapp.models import BuyerWallet
+from paymentapp.models import BuyerWallet,VendorWallet
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -10,7 +10,8 @@ PAYMENT_STATUS = [
 ]
 
 class TopUpMOdel(models.Model):
-    buyer = models.ForeignKey(BuyerWallet,on_delete=models.CASCADE)
+    buyer = models.ForeignKey(BuyerWallet,on_delete=models.CASCADE,null=True, related_name="topup_wallet")
+    vendor = models.ForeignKey(VendorWallet,on_delete=models.CASCADE,null=True, related_name="vendor_topup_wallet")
     amount=models.PositiveBigIntegerField()
     status = models.CharField(max_length=10,choices=PAYMENT_STATUS,default="PENDING")
     transaction_type = models.CharField(max_length=10, default="TOPUP")

@@ -6,8 +6,8 @@ import uuid
 import requests
 from decimal import Decimal
 from django.conf import settings
-from paymentapp.models import BuyerWallet, VendorWallet
-from paymentapp.serializers import BuyerWalletSerializer, VendorWalletSerializer
+from paymentapp.models import BuyerWallet,VendorWallet
+from paymentapp.serializers import BuyerWalletSerializer
 from .models import TopUpMOdel
 from rest_framework.permissions import IsAuthenticated
 
@@ -17,15 +17,18 @@ class TopUpWAlletView(APIView):
     def post(self,request):
         user = request.user
         amount = request.data.get("amount")
-        amount = int(amount) *100
+        amount = int(amount)
 
         if not amount or int(amount) <=0:
             return Response({"error": "Invalid amount"})
         
 
         try:
-            wallet = BuyerWallet.objects.get(user=user)
-        except BuyerWallet.DoesNotExist:
+            if request.user.role == 'vendor':
+                wallet = VendorWallet.objects.get(vendor=user)
+            else:
+                wallet = BuyerWallet.objects.get(user=user)
+        except (BuyerWallet.DoesNotExist, VendorWallet.DoesNotExist):
             return Response({"error": "Wallet not found."}, status=status.HTTP_404_NOT_FOUND)
         
         reference = str(uuid.uuid4()).replace("-", "")[:12]
@@ -36,7 +39,7 @@ class TopUpWAlletView(APIView):
 
         data={
             "email":user.email,
-            "amount":amount,
+            "amount":amount*100,
             "reference":reference,
             "metadata":{"wallet_top_up":True}
 
@@ -50,13 +53,22 @@ class TopUpWAlletView(APIView):
             # Ensure we persist the generated reference so the DB unique constraint
             # is respected and later verification can look up the transaction.
             try:
-                TopUpMOdel.objects.create(
-                    buyer=wallet,
-                    amount=amount,
-                    status="PENDING",
-                    transaction_type="TOPUP",
-                    reference=reference,
-                )
+                if request.user.role == 'vendor':
+                    TopUpMOdel.objects.create(
+                        vendor=wallet,
+                        amount=amount,
+                        status="PENDING",
+                        transaction_type="TOPUP",
+                        reference=reference,
+                    )
+                else:
+                    TopUpMOdel.objects.create(
+                        buyer=wallet,
+                        amount=amount,
+                        status="PENDING",
+                        transaction_type="TOPUP",
+                        reference=reference,
+                    )
             except Exception:
                 # If a rare collision or DB error occurs, generate a fresh reference
                 # and attempt a single retry to avoid IntegrityError on empty/duplicate refs.
@@ -93,8 +105,11 @@ class VerifyTopupView(APIView):
 
             user = request.user
             try:
-                wallet = BuyerWallet.objects.get(user=user)
-            except BuyerWallet.DoesNotExist:
+                if request.user.role == 'vendor':
+                    wallet = VendorWallet.objects.get(vendor=user)
+                else:
+                    wallet = BuyerWallet.objects.get(user=user)
+            except (BuyerWallet.DoesNotExist, VendorWallet.DoesNotExist):
                 return Response({"error": "Wallet not found."}, status=status.HTTP_404_NOT_FOUND)
 
             # Try to find the transaction regardless of status so we can be idempotent.
@@ -144,14 +159,10 @@ class GetWalletBalanceView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         user = request.user
-        try:
-            if user.role == "buyer":
-                data = BuyerWallet.objects.get(user_id=user)
-                serializer = BuyerWalletSerializer(data)
-            else:
-                data = VendorWallet.objects.get(vendor_id=user)
-                serializer = VendorWalletSerializer(data)
-        except BuyerWallet.DoesNotExist:
-            return Response({"message":"User not found"}, status=status.HTTP_404_NOT_FOUND)
+        if user.role == 'vendor':
+            data = VendorWallet.objects.get(vendor=request.user)
+        else:
+            data = BuyerWallet.objects.get(user=request.user)
+        serializer = BuyerWalletSerializer(data)
         return Response(serializer.data)
         
