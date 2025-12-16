@@ -185,7 +185,7 @@ class ProductDetailView(APIView):
     )
 
     def get(self,request,pk):
-        # auth_user = request.user
+        auth_user = request.user
         try:
             # allow any authenticated user to view product details
             product = Product.objects.get(pk=pk)
@@ -195,10 +195,12 @@ class ProductDetailView(APIView):
         data = serializer.data
         reviews = ProductReviews.objects.filter(product_id=data["id"])
         data["reviews"] = reviews
-        if auth_user != product.vendor_id:
-            _, created = ProductView.objects.get_or_create(product=product, user=auth_user)
-            if created:
-                Product.objects.filter(pk=pk).update(view_count=F('view_count') + 1)
+        print(auth_user)
+        if auth_user.is_authenticated:
+            if auth_user != product.vendor_id:
+                _, created = ProductView.objects.get_or_create(product=product, user=auth_user)
+                if created:
+                    Product.objects.filter(pk=pk).update(view_count=F('view_count') + 1)
         return Response(data)
 
     
