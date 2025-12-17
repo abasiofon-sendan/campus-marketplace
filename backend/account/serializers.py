@@ -3,6 +3,8 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+from customers.models import VendorProfiles
 from .models import CustomUserModel
 from paymentapp.models import VendorWallet, BuyerWallet
 import requests
@@ -42,6 +44,7 @@ class UserCreateSerializer(UserCreateSerializer):
         user.save()
         if role == 'vendor':
             VendorWallet.objects.create(vendor=user, balance=0)
+            VendorProfiles.objects.create(user=user)
         elif role == 'buyer':
             BuyerWallet.objects.create(user=user, balance=0)
         return user

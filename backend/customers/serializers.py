@@ -29,8 +29,6 @@ class VendorProfilesSerializer(serializers.ModelSerializer):
 
 class VendorContentSerializer(serializers.ModelSerializer):
     content_type = serializers.SerializerMethodField()
-    video = serializers.FileField(required=False, allow_null=True)
-    pictures = serializers.ImageField(required=False, allow_null=True)
     is_liked_by_user = serializers.SerializerMethodField()
     
     class Meta:
