@@ -1,6 +1,5 @@
 from django.db import models
 from django.conf import settings
-from cloudinary.models import CloudinaryField
 from django.core.exceptions import ValidationError
 
 User = settings.AUTH_USER_MODEL
@@ -35,8 +34,8 @@ class VendorProfiles(models.Model):
 
 class VendorContents(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='videos')
-    video = CloudinaryField('video', blank=True, null=True)
-    pictures = CloudinaryField('image', blank=True, null=True)
+    video = models.URLField(max_length=500, blank=True, null=True)  # Changed to URLField
+    pictures = models.URLField(max_length=500, blank=True, null=True)  # Changed to URLField
     caption = models.TextField(blank=True, null=True)
     likes_count = models.PositiveIntegerField(default=0)
     reviews_count = models.PositiveIntegerField(default=0)
