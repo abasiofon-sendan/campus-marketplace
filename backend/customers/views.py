@@ -1,3 +1,4 @@
+from re import U
 import cloudinary
 import cloudinary.uploader
 from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
@@ -285,7 +286,7 @@ class GetVendorProfileAndContents(APIView):
     def get(self, request, pk):
         try:
             profile = VendorProfiles.objects.get(user__id=pk)
-            print(f"Fetched profile for user ID {pk}: {profile}")
+            # print(f"Fetched profile for user ID {pk}: {profile}")
             
             if profile.user.role != 'vendor':
                 return Response(
