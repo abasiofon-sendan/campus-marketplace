@@ -1,3 +1,6 @@
+import cloudinary
+import cloudinary.uploader
+from django.core.files.uploadedfile import InMemoryUploadedFile, TemporaryUploadedFile
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -181,23 +184,6 @@ class UserDeleteProfile(APIView):
 class UploadContentView(APIView):
     permission_classes = [IsAuthenticated]
 
-    @extend_schema(
-        request=VendorContentSerializer,
-        responses={201: VendorContentSerializer},
-        examples=[
-            OpenApiExample(
-                'Upload Content Example',
-                summary='Example of uploading vendor content',
-                description='An example request to upload content for a vendor.',
-                value={
-                    "title": "New Product Launch",
-                    "description": "Check out our latest product!",
-                    "video_url": "http://example.com/videos/new_product.mp4"
-                },
-            ),
-        ]
-    )
-    
     def post(self, request):
         if request.user.role != 'vendor':
             return Response(
@@ -206,16 +192,83 @@ class UploadContentView(APIView):
             )
         
         try:
-            data = request.data.copy()
-            data['user'] = request.user.id
+            # Debug logging
+            # print(f"FILES received: {list(request.FILES.keys())}")
+            # print(f"DATA received: {list(request.data.keys())}")
             
-            serializer = VendorContentSerializer(data=data)
-            if serializer.is_valid():
-                serializer.save()
+            # Get the uploaded files
+            video_file = request.FILES.get('video')
+            picture_file = request.FILES.get('pictures')
+            
+            # Validate that at least one file is provided
+            if not video_file and not picture_file:
+                return Response(
+                    {"error": "You must upload either a video or pictures."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Validate that only one type is uploaded
+            if video_file and picture_file:
+                return Response(
+                    {"error": "You can only upload either a video or pictures, not both."}, 
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            # Upload to Cloudinary and get the secure URL
+            video_url = None
+            picture_url = None
+            
+            try:
+                if video_file:
+                    print(f"Uploading video: {video_file.name}, size: {video_file.size}")
+                    
+                    upload_result = cloudinary.uploader.upload(
+                        video_file,
+                        resource_type="video",
+                        folder=f"vendor_content/{request.user.id}",
+                        chunk_size=6000000,
+                        timeout=120
+                    )
+                    
+                    print(f"Cloudinary upload result: {upload_result}")
+                    video_url = upload_result['secure_url']
+                
+                if picture_file:
+                    print(f"Uploading picture: {picture_file.name}")
+                    
+                    upload_result = cloudinary.uploader.upload(
+                        picture_file,
+                        resource_type="image",
+                        folder=f"vendor_content/{request.user.id}"
+                    )
+                    
+                    picture_url = upload_result['secure_url']
+                
+                content = VendorContents.objects.create(
+                    user=request.user,
+                    caption=request.data.get('caption', ''),
+                    video=video_url,
+                    pictures=picture_url
+                )
+                
+                serializer = VendorContentSerializer(content, context={'request': request})
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+                
+            except cloudinary.exceptions.Error as e:
+                print(f"Cloudinary error: {str(e)}")
+                return Response(
+                    {"error": f"Failed to upload to Cloudinary: {str(e)}"}, 
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+            
         except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            print(f"General error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            return Response(
+                {"error": str(e)}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class GetVendorProfileAndContents(APIView):
@@ -232,6 +285,7 @@ class GetVendorProfileAndContents(APIView):
     def get(self, request, pk):
         try:
             profile = VendorProfiles.objects.get(user__id=pk)
+            print(f"Fetched profile for user ID {pk}: {profile}")
             
             if profile.user.role != 'vendor':
                 return Response(
