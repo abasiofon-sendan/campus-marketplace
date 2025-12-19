@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import *
 
+
 class ProductSerializer(serializers.ModelSerializer):
     vendor_username = serializers.CharField(source="vendor_id.username", read_only=True)
     vendor_email = serializers.CharField(source="vendor_id.email", read_only=True)

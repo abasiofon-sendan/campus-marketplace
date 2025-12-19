@@ -7,7 +7,7 @@ import requests
 from decimal import Decimal
 from django.conf import settings
 from paymentapp.models import BuyerWallet,VendorWallet
-from paymentapp.serializers import BuyerWalletSerializer
+from paymentapp.serializers import BuyerWalletSerializer, VendorWalletSerializer
 from .models import TopUpMOdel
 from rest_framework.permissions import IsAuthenticated
 
@@ -111,38 +111,47 @@ class VerifyTopupView(APIView):
                     wallet = BuyerWallet.objects.get(user=user)
             except (BuyerWallet.DoesNotExist, VendorWallet.DoesNotExist):
                 return Response({"error": "Wallet not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+            transaction_owner=None
+            
 
             # Try to find the transaction regardless of status so we can be idempotent.
             transaction = TopUpMOdel.objects.filter(reference=reference).first()
             if not transaction:
                 return Response({"error": "Top-up transaction not found."}, status=status.HTTP_404_NOT_FOUND)
+            if transaction.buyer:
+                transaction_owner=transaction.buyer.user
+            elif transaction.vendor:
+                transaction_owner=transaction.vendor.vendor
 
-            # Ensure the requester owns the transaction
-            if getattr(transaction.buyer, 'user', None) != user:
+            if transaction_owner != user:
                 return Response({"error": "You are not authorized to verify this transaction."}, status=status.HTTP_403_FORBIDDEN)
+            
 
+            
             # If the transaction was already processed, return success with current balance
             if transaction.status == "COMPLETED":
                 try:
-                    wallet_balance = float(Decimal(transaction.buyer.balance) / Decimal(100))
+                    wallet_balance = float(Decimal(wallet.balance))
                 except Exception:
                     wallet_balance = None
                 return Response({"message": "Top-up already processed.", "wallet_balance": wallet_balance, "data": res_data}, status=status.HTTP_200_OK)
 
             # At this point the transaction exists and is not completed -> process it
             metadata = res_data.get("data", {})
-            amount = metadata.get("amount", transaction.amount or 0)
+            amount_kobo = metadata.get("amount", transaction.amount or 0)
+            amount_naira= Decimal(amount_kobo)/Decimal(100)
 
-            # amount from Paystack is in the smallest unit (kobo). DB stores balance in kobo.
-            transaction.buyer.balance += int(amount)
+
+            wallet.balance += amount_naira
             transaction.status = "COMPLETED"
 
-            transaction.buyer.save()
+            wallet.save()
             transaction.save()
 
             # Return the updated wallet balance in major units (Naira)
             try:
-                wallet_balance = float(Decimal(transaction.buyer.balance) / Decimal(100))
+                wallet_balance = float(Decimal(wallet.balance))
             except Exception:
                 wallet_balance = None
 
@@ -161,8 +170,9 @@ class GetWalletBalanceView(APIView):
         user = request.user
         if user.role == 'vendor':
             data = VendorWallet.objects.get(vendor=request.user)
+            serializer = VendorWalletSerializer(data)
         else:
             data = BuyerWallet.objects.get(user=request.user)
-        serializer = BuyerWalletSerializer(data)
+            serializer = BuyerWalletSerializer(data)
         return Response(serializer.data)
         
