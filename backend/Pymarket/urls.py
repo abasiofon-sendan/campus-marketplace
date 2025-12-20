@@ -31,7 +31,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('auth/', include('djoser.urls')),
     path('auth/', include('djoser.urls.jwt')),
-    # path('auth/', include('account.urls')),
+    path('auth/', include('account.urls')),
     path('products/', include('Products_app.urls')),
     path('cart/', include('userCart.urls')),
     path('payment/', include('paymentapp.urls')),
