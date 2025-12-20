@@ -69,6 +69,7 @@ class CreateProductView(APIView):
         user = request.user
         print("User is:", user.id)
         data = request.data
+        print(data)
 
         # collect uploaded files (if any)
         images = request.FILES.getlist('image_url') if hasattr(request.FILES, 'getlist') else []
@@ -193,8 +194,8 @@ class ProductDetailView(APIView):
             return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)
         data = serializer.data
-        reviews = ProductReviews.objects.filter(product_id=data["id"])
-        data["reviews"] = reviews
+        # reviews = ProductReviews.objects.filter(product_id=data["id"])
+        # data["reviews"] = reviews
         print(auth_user)
         if auth_user.is_authenticated:
             if auth_user != product.vendor_id:
@@ -240,8 +241,9 @@ class AllProductsView(APIView):
 
 
 
-
-            
-
-
-            
+class GetVendorProducts(APIView):
+    permission_classes = [IsAuthenticated]
+    def get(self, request, pk):
+        data = Product.objects.filter(vendor_id=pk)
+        serializer = ProductSerializer(data, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
