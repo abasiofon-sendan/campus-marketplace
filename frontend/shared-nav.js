@@ -1,5 +1,27 @@
 // Shared navigation component for all pages
-function initializeNavigation() {
+ async function initializeNavigation() {
+  const authToken = JSON.parse(localStorage.getItem("authToken"));
+  if(!authToken) return;
+  try {
+    const response = await fetch('http://127.0.0.1:8000/auth/users/me/',
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${authToken.access}`
+        },
+      });
+
+    if (response.ok) {
+
+    }
+    const userInfo = response.json();
+    localStorage.setItem("userInfo", userInfo);
+  } catch (error) {
+    console.log(error);
+  }
+
+
   // Only create navbar if it doesn't exist
   if (document.querySelector(".navbar")) {
     initializeNavbarEvents()
@@ -33,6 +55,9 @@ function initializeNavigation() {
         </div>
 
         <div class="navbar-right">
+          <div class="navbar-item auth" id="authControls" style="display:none;">
+            <!-- Auth controls (Login / Signup) will be injected here -->
+          </div>
           <div class="navbar-item desktop-only">
             <a href="leaderboard.html" class="nav-link" title="Leaderboard">
               🏆 <span class="nav-text">Leaderboard</span>
@@ -161,7 +186,7 @@ function initializeNavbarEvents() {
   if (logoutBtn) {
     logoutBtn.addEventListener("click", (e) => {
       e.preventDefault()
-      localStorage.setItem("currentUser", JSON.stringify(null))
+      localStorage.setItem("authToken", JSON.stringify(null))
       window.location.href = "login.html"
     })
   }
@@ -171,7 +196,7 @@ function initializeNavbarEvents() {
   if (mobileLogoutBtn) {
     mobileLogoutBtn.addEventListener("click", (e) => {
       e.preventDefault()
-      localStorage.setItem("currentUser", JSON.stringify(null))
+      localStorage.setItem("authToken", JSON.stringify(null))
       window.location.href = "login.html"
     })
   }
@@ -181,6 +206,77 @@ function initializeNavbarEvents() {
   updateWalletBalance()
   updateCartBadge()
   updateNotifications()
+  // Update auth controls (show login/signup when not logged in)
+  updateAuthControls()
+}
+
+function updateAuthControls() {
+  const currentUser = JSON.parse(localStorage.getItem("authToken"))
+
+  const authControls = document.getElementById("authControls")
+  const navbarItems = Array.from(document.querySelectorAll('.navbar-right > .navbar-item'))
+  const mobileMenu = document.getElementById('mobileMenuDropdown')
+
+  if (!authControls) return
+
+  if (!currentUser) {
+    // Hide desktop and mobile items except the auth container
+    navbarItems.forEach((el) => {
+      if (el.id !== 'authControls') el.style.display = 'none'
+    })
+
+    // Populate auth controls with Login / Signup buttons
+    authControls.innerHTML = `
+      <a href="login.html" class="nav-link">Login</a>
+      <a href="signup.html" class="nav-link" style="margin-left:12px;">Signup</a>
+    `
+    authControls.style.display = 'flex'
+
+    // Mobile menu: hide existing items and show login/signup
+    if (mobileMenu) {
+      Array.from(mobileMenu.querySelectorAll('.mobile-menu-item')).forEach((el) => el.style.display = 'none')
+      // add mobile auth items if not already present
+      if (!document.getElementById('mobileLoginItem')) {
+        const loginItem = document.createElement('a')
+        loginItem.className = 'mobile-menu-item'
+        loginItem.id = 'mobileLoginItem'
+        loginItem.href = 'login.html'
+        loginItem.innerHTML = `<span>🔑</span><span>Login</span>`
+        mobileMenu.insertBefore(loginItem, mobileMenu.firstChild)
+
+        const signupItem = document.createElement('a')
+        signupItem.className = 'mobile-menu-item'
+        signupItem.id = 'mobileSignupItem'
+        signupItem.href = 'signup.html'
+        signupItem.innerHTML = `<span>✍️</span><span>Signup</span>`
+        mobileMenu.insertBefore(signupItem, mobileMenu.firstChild)
+      }
+      // ensure mobile auth items are visible
+      const mobiLogin = document.getElementById('mobileLoginItem')
+      const mobiSignup = document.getElementById('mobileSignupItem')
+      if (mobiLogin) mobiLogin.style.display = 'flex'
+      if (mobiSignup) mobiSignup.style.display = 'flex'
+    }
+  } else {
+    // Logged in: show regular items (clear any inline hides)
+    navbarItems.forEach((el) => {
+      // restore display: let CSS control layout; default to inline-flex for authControls
+      el.style.display = ''
+    })
+    // hide auth-controls container
+    authControls.style.display = 'none'
+
+    // Mobile menu: remove mobileLogin/mobileSignup or hide them
+    if (mobileMenu) {
+      const mobiLogin = document.getElementById('mobileLoginItem')
+      const mobiSignup = document.getElementById('mobileSignupItem')
+      if (mobiLogin) mobiLogin.style.display = 'none'
+      if (mobiSignup) mobiSignup.style.display = 'none'
+      // ensure mobile logout is visible only if logged in
+      const mobileLogout = document.getElementById('mobileLogoutBtn')
+      if (mobileLogout) mobileLogout.style.display = 'flex'
+    }
+  }
 }
 
 function updateVendorMenu() {
@@ -221,12 +317,25 @@ function updateWalletBalance() {
   }
 }
 
-function updateCartBadge() {
-  const cart = JSON.parse(localStorage.getItem("cart")) || []
-  const badge = document.getElementById("cartBadge")
-  if (badge) {
-    badge.textContent = cart.reduce((sum, item) => sum + item.quantity, 0)
+async function updateCartBadge() {
+  try{
+    const response = await fetch('',
+      {
+        method: "GET",
+        headers: {
+          "Content-Type":"application/json",
+          "Authorization": `Bearer ${authToken.access}`,
+        }
+      }
+    )
+
+    const cart = await response.json();
+    const badge = document.getElementById("cartBadge");
+    badge.textContent = cart.length;
+  }catch(error){
+    console.log(error);
   }
+
 }
 
 function updateNotifications() {
