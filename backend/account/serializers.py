@@ -25,6 +25,7 @@ class UserCreateSerializer(UserCreateSerializer):
         role = validate_data.get('role')
         username = validate_data.get('username')
         phone = validate_data.get("phone")
+        institute = validate_data.get('institute')
 
         email = email.strip() if email else None
 
@@ -38,7 +39,8 @@ class UserCreateSerializer(UserCreateSerializer):
             email=email,
             role=role,
             username=username,
-            phone=phone
+            phone=phone,
+            institute=institute
         )
         user.set_password(validate_data['password'])
         user.save()
