@@ -272,7 +272,7 @@ class UploadContentView(APIView):
             )
 
 
-class GetVendorProfileAndContents(APIView):
+class GetVendorContents(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
@@ -283,47 +283,10 @@ class GetVendorProfileAndContents(APIView):
         ],
         responses={200: dict},
     )
-    def get(self, request, pk):
-        try:
-            profile = VendorProfiles.objects.get(user__id=pk)
-            # print(f"Fetched profile for user ID {pk}: {profile}")
-            
-            if profile.user.role != 'vendor':
-                return Response(
-                    {"error": "This user is not a vendor"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            
-            contents = profile.user.videos.all().order_by('-uploaded_at')
-            
-            # Check if current user is following this vendor
-            is_following = Follow.objects.filter(follower=request.user, vendor=profile.user).exists()
-            
-            # Configure pagination
-            paginator = PageNumberPagination()
-            paginator.page_size = 10
-            paginated_contents = paginator.paginate_queryset(contents, request)
-            
-            profile_serializer = VendorProfilesSerializer(profile)
-            contents_serializer = VendorContentSerializer(
-                paginated_contents, 
-                many=True, 
-                context={'request': request}
-            )
-            
-            return Response({
-                "profile": profile_serializer.data,
-                "is_following": is_following,
-                "followers_count": profile.followers_count,
-                "contents": contents_serializer.data,
-                "contents_count": contents.count(),
-                "next": paginator.get_next_link(),
-                "previous": paginator.get_previous_link()
-            }, status=status.HTTP_200_OK)
-        except VendorProfiles.DoesNotExist:
-            return Response({"error": "Vendor profile not found"}, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    def get(self, request):
+        contents = VendorContents.objects.filter(user=request.user)
+        serializer = VendorContentSerializer(contents, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class FollowVendorView(APIView):
