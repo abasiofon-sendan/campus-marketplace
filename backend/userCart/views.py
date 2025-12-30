@@ -1,4 +1,5 @@
 from django.shortcuts import render
+from httpcore import request
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -17,6 +18,15 @@ class CarItemView(APIView):
 
     def post(self,request, pk):
         try:
+            product_instance = Product.objects.get(id=pk)
+        except Product.DoesNotExist:
+            return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Prevent the product owner from adding their own product to cart
+        if product_instance.vendor_id == request.user:
+            return Response({"message": "You cannot add your own product to cart"}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+
             product = CartItem.objects.get(product=pk, user=request.user)
             product.quantity += 1
             product.save()
@@ -25,6 +35,10 @@ class CarItemView(APIView):
             data = {
                 "product":pk
             }
+
+
+
+
 
         serializer=CartItemSerializer(data=data)
         if serializer.is_valid():
