@@ -16,6 +16,8 @@ import httpx
 from drf_spectacular.utils import extend_schema,OpenApiParameter,OpenApiExample
 from drf_spectacular.types import OpenApiTypes
 from django.db.models import F
+from algorithm.models import UserCategoryModel
+from algorithm.utils import personalized_feed
 # Create your views here.
 
 class ProductListCreateView(APIView):
@@ -194,14 +196,16 @@ class ProductDetailView(APIView):
             return Response({"message": "Product not found"}, status=status.HTTP_404_NOT_FOUND)
         serializer = ProductSerializer(product)
         data = serializer.data
-        # reviews = ProductReviews.objects.filter(product_id=data["id"])
-        # data["reviews"] = reviews
-        print(auth_user)
         if auth_user.is_authenticated:
             if auth_user != product.vendor_id:
                 _, created = ProductView.objects.get_or_create(product=product, user=auth_user)
                 if created:
                     Product.objects.filter(pk=pk).update(view_count=F('view_count') + 1)
+                user_category = UserCategoryModel.objects.filter(user=auth_user, category=data["category"])
+                if user_category.exists():
+                    user_category.update(view_count=F('view_count') + 1)
+                else:
+                    UserCategoryModel.objects.create(user=auth_user, category=data["category"])
         return Response(data)
 
     
@@ -235,7 +239,13 @@ class AllProductsView(APIView):
     # permission_classes = [IsAuthenticated]
 
     def get(self,request):
-        products= Product.objects.all()
+        user = request.user
+        print(user)
+        if user.is_authenticated:
+            print("hi")
+            products = personalized_feed(user)
+        else:
+            products= Product.objects.all()
         serializer= ProductSerializer(products,many=True)
         return Response(serializer.data)
 
