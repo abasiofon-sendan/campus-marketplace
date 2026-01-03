@@ -436,12 +436,6 @@ class ReviewContentView(APIView):
         try:
             content = VendorContents.objects.get(id=content_id)
             
-            # Check if already reviewed
-            if ContentReview.objects.filter(user=request.user, content=content).exists():
-                return Response(
-                    {"error": "You have already reviewed this content"}, 
-                    status=status.HTTP_400_BAD_REQUEST
-                )
             
             serializer = ContentReviewSerializer(data=request.data)
             if serializer.is_valid():

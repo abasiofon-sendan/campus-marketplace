@@ -132,7 +132,7 @@ class ContentReview(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = ('user', 'content')
+        # unique_together = ('user', 'content')
         ordering = ['-created_at']
 
     def clean(self):
