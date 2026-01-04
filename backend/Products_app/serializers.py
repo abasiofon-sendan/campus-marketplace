@@ -1,5 +1,14 @@
 from rest_framework import serializers
-from .models import *
+from .models import Product, ProductReviews
+
+
+class ProductReviewSerializer(serializers.ModelSerializer):
+    user_name = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = ProductReviews
+        fields = ['id', 'user', 'user_name', 'rating', 'review', 'created_at']
+        read_only_fields = ['user', 'created_at']
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -8,6 +17,8 @@ class ProductSerializer(serializers.ModelSerializer):
     vendor_rating = serializers.CharField(source="vendor_id.rating", read_only=True)
     institute = serializers.CharField(source="vendor_id.institute", read_only=True)
     pfp = serializers.URLField(source="vendor_id.profile_url", read_only=True)
+    reviews = ProductReviewSerializer(source='product', many=True, read_only=True)
+
     class Meta:
         model = Product
-        fields ="__all__"
+        fields = "__all__"

@@ -254,6 +254,6 @@ class AllProductsView(APIView):
 class GetVendorProducts(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request, pk):
-        data = Product.objects.filter(vendor_id=pk)
+        data = Product.objects.filter(vendor_id=pk).prefetch_related('product')
         serializer = ProductSerializer(data, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
