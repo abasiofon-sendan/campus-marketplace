@@ -40,4 +40,5 @@ urlpatterns = [
     path("search/",include("usersearch.urls")),
     path("health/", health_check),
     path('analytics/', include('analytics.urls')),
+    path('chat/', include('chatapp.urls'))
 ]
