@@ -7,6 +7,7 @@ class ProductSerializer(serializers.ModelSerializer):
     vendor_email = serializers.CharField(source="vendor_id.email", read_only=True)
     vendor_rating = serializers.CharField(source="vendor_id.rating", read_only=True)
     institute = serializers.CharField(source="vendor_id.institute", read_only=True)
+    pfp = serializers.URLField(source="vendor_id.profile_url", read_only=True)
     class Meta:
         model = Product
         fields ="__all__"
