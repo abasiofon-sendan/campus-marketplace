@@ -8,5 +8,5 @@ User = get_user_model()
 
 class UserCategoryModel(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="user")
-    category = models.CharField(max_length=100, unique=True)
+    category = models.CharField(max_length=100)
     view_count = models.PositiveIntegerField(default=1)
