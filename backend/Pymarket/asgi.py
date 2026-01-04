@@ -1,16 +1,23 @@
-"""
-ASGI config for Pymarket project.
-
-It exposes the ASGI callable as a module-level variable named ``application``.
-
-For more information on this file, see
-https://docs.djangoproject.com/en/5.2/howto/deployment/asgi/
-"""
+# Pymarket/asgi.py
 
 import os
-
+from channels.routing import ProtocolTypeRouter, URLRouter
 from django.core.asgi import get_asgi_application
+from channels.security.websocket import AllowedHostsOriginValidator
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Pymarket.settings')
 
-application = get_asgi_application()
+# Import AFTER setting DJANGO_SETTINGS_MODULE
+import chatapp.routing
+from chatapp.middleware import JWTAuthMiddleware
+
+application = ProtocolTypeRouter({
+    "http": get_asgi_application(),
+    "websocket": AllowedHostsOriginValidator(
+        JWTAuthMiddleware(
+            URLRouter(
+                chatapp.routing.websocket_urlpatterns
+            )
+        )
+    ),
+})

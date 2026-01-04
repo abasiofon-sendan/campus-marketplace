@@ -26,6 +26,8 @@ class CustomUserModel(AbstractUser):
     rating = models.PositiveIntegerField(default=0)
     profile_url = models.TextField(null=True, default="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/profiie_pictures/freepik__adjust__23179.png")
     bio = models.TextField(null=True, blank=True)
+    online = models.BooleanField(default=False)
+    last_seen = models.DateTimeField(auto_now=True)
     
 
 
