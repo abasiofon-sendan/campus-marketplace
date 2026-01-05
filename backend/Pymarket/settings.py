@@ -97,6 +97,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
 ]
 
+REDIS_URL = os.environ.get('REDIS_URL')
+
 
 WSGI_APPLICATION = 'Pymarket.wsgi.application'
 ASGI_APPLICATION = 'Pymarket.asgi.application'
@@ -105,7 +107,7 @@ CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
-            "hosts": [('localhost', 6379)],
+            "hosts": [REDIS_URL],
         }
     },
 }
