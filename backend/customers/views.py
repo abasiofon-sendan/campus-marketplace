@@ -274,7 +274,7 @@ class UploadContentView(APIView):
             )
 
 
-class GetVendorContents(APIView):
+class GetMyContents(APIView):
     permission_classes = [IsAuthenticated]
     
     @extend_schema(
@@ -558,3 +558,11 @@ class GetUserProfile(APIView):
             'following_count': following_count,
             'following': following_data
         }, status=status.HTTP_200_OK)
+    
+
+class GetVendorContents(APIView):
+    def get(self, request, pk):
+        contents = VendorContents.objects.filter(user=pk)
+        serializer = VendorContentSerializer(contents, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
