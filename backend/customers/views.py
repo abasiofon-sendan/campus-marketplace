@@ -538,7 +538,9 @@ class GetContentReviewsView(APIView):
             return Response({"error": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
-class GetUserProfile(APIView):    
+class GetUserProfile(APIView):
+    permission_classes = [IsAuthenticated]
+    
     @extend_schema(
         summary="Get Current User Profile",
         description="Retrieve the authenticated user's profile including following count and list.",

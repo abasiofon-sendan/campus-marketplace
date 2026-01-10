@@ -10,7 +10,6 @@ from django.db.models import Sum
 User = get_user_model()
 
 class GetUserProfile(APIView):
-    permission_classes = [IsAuthenticated]
     def get(self, request, pk):
         try:
             data = User.objects.get(id=pk)
