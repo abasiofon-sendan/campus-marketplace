@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from django.http import HttpResponse
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from .utils import link_preview
 
 
 
@@ -40,5 +41,6 @@ urlpatterns = [
     path("search/",include("usersearch.urls")),
     path("health/", health_check),
     path('analytics/', include('analytics.urls')),
-    path('chat/', include('chatapp.urls'))
+    path('chat/', include('chatapp.urls')),
+    path('vendor-profile/', link_preview)
 ]
