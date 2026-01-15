@@ -8,6 +8,10 @@ User = get_user_model()
 # Create your models here.
 
 
+def generate_order_id():
+    return f"ORD-{str(uuid.uuid4())[4:11]}"
+
+
 class Order(models.Model):
     STATUS_CHOICES = [
         ('pending', 'Pending'),
@@ -17,9 +21,9 @@ class Order(models.Model):
         ('expired', 'Expired - Refunded')
     ]
 
+    id = models.CharField(primary_key=True, max_length=20, unique=True, default=generate_order_id, editable=False)
     buyer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='purchases')
     vendor = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sales")
-    product = models.ForeignKey(Product, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
 

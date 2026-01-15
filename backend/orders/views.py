@@ -16,3 +16,5 @@ class GetAllOrders(APIView):
             Q(vendor=user) | Q(buyer=user)
         ).select_related("vendor", "buyer")
 
+        
+
