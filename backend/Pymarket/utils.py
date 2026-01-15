@@ -13,7 +13,7 @@ def link_preview(request):
     
     # Check if pfp exists
 
-    image_url = vendor_info.pfp
+    image_url = vendor_info.profile_url
     
     # Detect if it's a bot/scraper
     user_agent = request.META.get('HTTP_USER_AGENT', '').lower()
