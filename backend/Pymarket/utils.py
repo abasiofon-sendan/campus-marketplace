@@ -16,7 +16,7 @@ def link_preview(request):
     <!DOCTYPE html>
     <html>
     <head>
-        <meta property="og:title" content="{vendor_info.username} Profile - Upstart">
+        <meta property="og:title" content="{vendor_info.username}'s Profile - Upstart">
         <meta property="og:description" content="{vendor_info.bio}">
         <meta property="og:image" content="{vendor_info.profile_url}">
         <meta property="og:url" content="https://upstartpy.onrender.com/vendor-profile?vendorId={vendor_id}">
