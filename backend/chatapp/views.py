@@ -22,7 +22,10 @@ class CreateConversationView(APIView):
         except User.DoesNotExist:
             return Response({"message":"Vendor does not exist"}, status=status.HTTP_404_NOT_FOUND)
         
-        _, created = ConversationModel.objects.get_or_create(buyer=user, vendor=vendor)
+        if user.id > vendor:
+            _, created = ConversationModel.objects.get_or_create(buyer=vendor, vendor=user)
+        else:
+            _, created = ConversationModel.objects.get_or_create(buyer=user, vendor=vendor)
 
         if created:
             return Response({"message":"Chat created successfully"}, status=status.HTTP_201_CREATED)
