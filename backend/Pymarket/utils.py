@@ -32,7 +32,7 @@ def link_preview(request):
         <!-- Open Graph (for WhatsApp, Facebook, etc.) -->
         <meta property="og:title" content="{vendor_info.username} Profile - Upstart">
         <meta property="og:description" content="{vendor_info.bio}">
-        <meta property="og:image" content="{image_url}">
+        <meta property="og:image" content="https://dqkuddmtpxwqyjbkamcb.supabase.co/storage/v1/object/public/marketplace/profile_pictures/1000421043_42f7c2eed0254886964d8a1c56c29356.jpg">
         <meta property="og:url" content="https://upstartpy.onrender.com/vendor-profile?vendorId={vendor_id}">
         <meta property="og:type" content="profile">
         
