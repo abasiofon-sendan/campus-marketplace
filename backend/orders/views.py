@@ -16,5 +16,9 @@ class GetAllOrders(APIView):
             Q(vendor=user) | Q(buyer=user)
         ).select_related("vendor", "buyer")
 
+        serializer = OrderSerializer(data, many=True)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
         
 

@@ -22,7 +22,7 @@ class CreateConversationView(APIView):
         except User.DoesNotExist:
             return Response({"message":"Vendor does not exist"}, status=status.HTTP_404_NOT_FOUND)
         
-        if user.id > vendor:
+        if user.id > vendor.id:
             _, created = ConversationModel.objects.get_or_create(buyer=vendor, vendor=user)
         else:
             _, created = ConversationModel.objects.get_or_create(buyer=user, vendor=vendor)
