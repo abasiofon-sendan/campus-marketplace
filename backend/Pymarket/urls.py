@@ -43,5 +43,5 @@ urlpatterns = [
     path('analytics/', include('analytics.urls')),
     path('chat/', include('chatapp.urls')),
     path('vendor-profile', link_preview),
-    path('orders/', include('orders.urls'))
+    path('orders/', include('orders.urls')),
 ]
