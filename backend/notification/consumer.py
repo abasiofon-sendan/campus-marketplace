@@ -49,17 +49,34 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             notification_id = data.get('notification_id')
             await self.delete_notification(notification_id)
 
-    async def notification_message(self,event):
+    async def notification_message(self, event):
+        """Receive notification from group and send to WebSocket"""
+        # Send the new notification
         await self.send(text_data=json.dumps({
-            'type':'new_notification',
-            'notification':event['notification']
-        }))      
+            'type': 'new_notification',
+            'notification': event['notification']
+        }))
+        
+        # Also send updated unread count
+        unread_count = await self.get_unread_count()
+        await self.send(text_data=json.dumps({
+            'type': 'unread_count',
+            'count': unread_count
+        }))
 
     async def send_notification(self):
-        notification  = await self.get_notifications()
+        """Send all notifications to client"""
+        notification = await self.get_notifications()
         await self.send(text_data=json.dumps({
-            'type':'notifications',
-            'notifications':notification
+            'type': 'notifications',
+            'notifications': notification
+        }))
+        
+        # Send unread count
+        unread_count = await self.get_unread_count()
+        await self.send(text_data=json.dumps({
+            'type': 'unread_count',
+            'count': unread_count
         }))
 
     @database_sync_to_async
@@ -94,3 +111,5 @@ class NotificationConsumer(AsyncWebsocketConsumer):
             return True
         except Notification.DoesNotExist:
             return  False
+
+

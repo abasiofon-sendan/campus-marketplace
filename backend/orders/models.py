@@ -26,6 +26,7 @@ class Order(models.Model):
     vendor = models.ForeignKey(User, on_delete=models.CASCADE, related_name="sales")
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=30, choices=STATUS_CHOICES, default='pending')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, null=True,blank=True)
 
     qr_code = models.UUIDField(default=uuid.uuid4, unique=True)
     qr_expires_at = models.DateTimeField(blank=True, null=True)

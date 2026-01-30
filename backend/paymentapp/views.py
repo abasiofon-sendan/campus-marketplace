@@ -17,8 +17,12 @@ from django.db.models import F
 from decimal import Decimal
 from rest_framework import serializers
 from drf_spectacular.utils import inline_serializer
+from orders.models import Order
+from wallet.models import EscrowWallet
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
-class InitializePaymentView(APIView):
+class InitializeOrderView(APIView):
     permission_classes = [IsAuthenticated]
 
     @extend_schema(
@@ -135,14 +139,16 @@ class InitializePaymentView(APIView):
         if not cart_items.exists():
             return Response({"error": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Calculate total amount needed (in naira) and prepare details
+        # Calculate total and group by vendor
         total_amount_naira = Decimal('0.00')
-        cart_details = []
+        # cart_details = []
         per_item_totals = {}
+        vendor_items ={}
 
         for cart_item in cart_items:
             product = cart_item.product
             quantity = cart_item.quantity
+            vendor_id = product.vendor_id
 
             try:
                 price_naira = Decimal(product.price)
@@ -154,15 +160,27 @@ class InitializePaymentView(APIView):
             total_amount_naira += item_total_naira
             per_item_totals[cart_item.id] = item_total_naira
 
-            cart_details.append({
+            # cart_details.append({
+            #     "cart_item_id": cart_item.id,
+            #     "product_id": product.id,
+            #     "product_name": product.product_name,
+            #     "vendor_id": vendor_id,
+            #     "quantity": quantity,
+            #     "price_per_unit_naira": float(price_naira),
+            #     "item_total_naira": float(item_total_naira),
+            # })
+
+            if vendor_id not in vendor_items:
+                vendor_items[vendor_id] = []
+            vendor_items[vendor_id].append({
                 "cart_item_id": cart_item.id,
-                "product_id": product.id,
                 "product_name": product.product_name,
                 "quantity": quantity,
-                "price_per_unit_naira": float(price_naira),
-                "item_total_naira": float(item_total_naira),
-            })
+                "amount":item_total_naira,
+                "product_id":product.id
 
+            })
+            print(vendor_items)
         # Start atomic transaction
         with db_transaction.atomic():
             # Get buyer wallet
@@ -178,67 +196,54 @@ class InitializePaymentView(APIView):
                     "balance_naira": float(buyer_wallet.balance),
                     "required_naira": total_amount_naira,
                 }, status=status.HTTP_400_BAD_REQUEST)
+            orders_created = []
+            
+            # Process each vendor's items
+            for vendor_id, items in vendor_items.items():
+                vendor_total = Decimal('0.00')
+                
+                # Process each item for this vendor
+                for item in items:
+                    product_id = item['product_id']
+                    product_name = item['product_name']
+                    quantity = item['quantity']
+                    amount = item['amount']
 
-            # Process each cart item
-            transactions_created = []
-            vendor_credits = {}  # {vendor_id: total_amount_naira}
+                    # Get product and lock it
+                    product = Product.objects.select_for_update().get(pk=product_id)
 
-            for detail in cart_details:
-                cart_item_id = detail["cart_item_id"]
-                product_id = detail["product_id"]
-                quantity = detail["quantity"]
-                item_total_naira = per_item_totals[cart_item_id]
+                    # Check stock
+                    if product.quantity < quantity:
+                        return Response({
+                            "error": f"Insufficient stock for {product_name}. Available: {product.quantity}, Requested: {quantity}",
+                        }, status=status.HTTP_409_CONFLICT)
 
-                # Get product and lock it
-                product = Product.objects.select_for_update().get(pk=product_id)
-                vendor_id = product.vendor_id
+                    # Deduct stock
+                    Product.objects.filter(pk=product_id).update(quantity=F('quantity') - quantity)
+                    vendor_total += amount
 
-                # Check stock
-                if product.quantity < quantity:
-                    return Response({
-                        "error": f"Insufficient stock for {product.product_name}. Available: {product.quantity}, Requested: {quantity}",
-                    }, status=status.HTTP_409_CONFLICT)
-
-                # Deduct stock
-                Product.objects.filter(pk=product_id).update(quantity=F('quantity') - quantity)
-
-                try:
-                    vendor_wallet = VendorWallet.objects.select_for_update().get(vendor_id=vendor_id)
-                except VendorWallet.DoesNotExist:
-                    return Response({"error": f"Vendor wallet not found for vendor ID {vendor_id}."}, status=status.HTTP_404_NOT_FOUND)
-
-                # Track vendor credit
-                if vendor_id not in vendor_credits:
-                    vendor_credits[vendor_id] = Decimal('0.00')
-                vendor_credits[vendor_id] += item_total_naira
-
-                # Create transaction record
-                reference = str(uuid.uuid4()).replace("-", "")[:12]
-                transaction = Transaction.objects.create(
-                    buyer=buyer_wallet,
-                    vendor=vendor_wallet,
-                    product=product,
-                    amount=item_total_naira,
-                    quantity=quantity,
-                    reference=reference,
-                    status="COMPLETED",
-                    transaction_type="PURCHASE",
+                # Create ONE order per vendor
+                order = Order.objects.create(
+                    buyer=user,
+                    vendor=vendor_id,  # Changed from vendor_id to vendor (ForeignKey field)
+                    amount=vendor_total,
+                    status='pending'
                 )
-                transactions_created.append(transaction)
+                orders_created.append(order)
 
-            # Debit buyer wallet once (atomic)
+                # Create Escrow record
+                EscrowWallet.objects.create(
+                    order=order,
+                    amount=vendor_total,
+                    status="HELD"
+                )
+
+                
+
+            # Debit buyer wallet ONCE (after all orders created)
             BuyerWallet.objects.filter(pk=buyer_wallet.pk).update(
                 balance=F('balance') - total_amount_naira
             )
-
-            # Credit each vendor wallet (atomic)
-            for vendor_id, amount_naira in vendor_credits.items():
-                try:
-                    VendorWallet.objects.filter(vendor_id=vendor_id).update(
-                        balance=F('balance') + amount_naira
-                    )
-                except Exception:
-                    return Response({"error": f"Failed to credit vendor {vendor_id}."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
             # Clear cart
             if ids:
@@ -246,10 +251,60 @@ class InitializePaymentView(APIView):
             else:
                 CartItem.objects.filter(user=user).delete()
 
-        return Response({
-            "message": "Checkout successful. All items purchased.",
-            "total_amount_naira": total_amount_naira,
-            "items_purchased": len(cart_details),
-            "cart_details": cart_details,
-            "transactions": len(transactions_created),
-        }, status=status.HTTP_200_OK)
+            return Response({
+                "message": "Orders created. Awaiting QR code validation.",
+                "total_amount_naira": float(total_amount_naira),
+                "orders_created": len(orders_created),
+                "orders": [
+                    {
+                        "order_id": order.id,
+                        "vendor_id": order.vendor_id,
+                        "amount": float(order.amount),
+                        "status": order.status,
+                    } for order in orders_created
+                ]
+            }, status=status.HTTP_200_OK)
+                
+
+
+        #         # Create transaction record
+        #         reference = str(uuid.uuid4()).replace("-", "")[:12]
+        #         transaction = Transaction.objects.create(
+        #             buyer=buyer_wallet,
+        #             vendor=vendor_wallet,
+        #             product=product,
+        #             amount=item_total_naira,
+        #             quantity=quantity,
+        #             reference=reference,
+        #             status="COMPLETED",
+        #             transaction_type="PURCHASE",
+        #         )
+        #         transactions_created.append(transaction)
+
+        #     # Debit buyer wallet once (atomic)
+        #     BuyerWallet.objects.filter(pk=buyer_wallet.pk).update(
+        #         balance=F('balance') - total_amount_naira
+        #     )
+
+        #     # Credit each vendor wallet (atomic)
+        #     for vendor_id, amount_naira in vendor_credits.items():
+        #         try:
+        #             VendorWallet.objects.filter(vendor_id=vendor_id).update(
+        #                 balance=F('balance') + amount_naira
+        #             )
+        #         except Exception:
+        #             return Response({"error": f"Failed to credit vendor {vendor_id}."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        #     # Clear cart
+        #     if ids:
+        #         CartItem.objects.filter(user=user, id__in=ids).delete()
+        #     else:
+        #         CartItem.objects.filter(user=user).delete()
+
+        # return Response({
+        #     "message": "Checkout successful. All items purchased.",
+        #     "total_amount_naira": total_amount_naira,
+        #     "items_purchased": len(cart_details),
+        #     "cart_details": cart_details,
+        #     "transactions": len(transactions_created),
+        # }, status=status.HTTP_200_OK)
