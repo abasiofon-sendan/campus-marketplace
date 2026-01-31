@@ -1,6 +1,11 @@
 # Pymarket/asgi.py
 
 import os
+import django
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Pymarket.settings')
+django.setup()
+
+
 from django.core.asgi import get_asgi_application
 from channels.routing import ProtocolTypeRouter, URLRouter
 from channels.middleware import BaseMiddleware
@@ -10,7 +15,7 @@ from rest_framework_simplejwt.exceptions import InvalidToken, TokenError
 from django.contrib.auth import get_user_model
 from asgiref.sync import sync_to_async
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'Pymarket.settings')
+
 
 # Initialize Django ASGI application early to ensure the AppRegistry is populated
 # before importing code that may import ORM models.

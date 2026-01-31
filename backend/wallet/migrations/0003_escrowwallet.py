@@ -7,9 +7,10 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('orders', '0004_order_product'),
         ('wallet', '0002_topupmodel_vendor_alter_topupmodel_buyer'),
+        ('orders', '0001_initial'),
     ]
+
 
     operations = [
         migrations.CreateModel(
