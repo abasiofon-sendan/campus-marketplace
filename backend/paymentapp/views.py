@@ -246,10 +246,10 @@ class InitializeOrderView(APIView):
             )
 
             # Clear cart
-            if ids:
-                CartItem.objects.filter(user=user, id__in=ids).delete()
-            else:
-                CartItem.objects.filter(user=user).delete()
+            # if ids:
+            #     CartItem.objects.filter(user=user, id__in=ids).delete()
+            # else:
+            #     CartItem.objects.filter(user=user).delete()
 
             return Response({
                 "message": "Orders created. Awaiting QR code validation.",
