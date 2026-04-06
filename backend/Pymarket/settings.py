@@ -62,6 +62,7 @@ INSTALLED_APPS = [
     'chatapp',
     'orders',
     'notification',
+    'waitlist'
 ]
 
 MIDDLEWARE = [
@@ -107,16 +108,12 @@ REDIS_URL = os.environ.get('REDIS_URL')
 WSGI_APPLICATION = 'Pymarket.wsgi.application'
 ASGI_APPLICATION = 'Pymarket.asgi.application'
 
-# CHANNEL_LAYERS = {
-#     "default": {
-#         "BACKEND": "channels.layers.InMemoryChannelLayer"
-#     },
-# }
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",
         "CONFIG": {
             "hosts": [REDIS_URL],
+            # "hosts": [('localhost', '6379')]
         }
     },
 }
