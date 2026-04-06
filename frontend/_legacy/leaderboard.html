@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Leaderboard - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="leaderboard.css">
+    <link rel="stylesheet" href="skeleton-loader.css">
+    <link rel="icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png">
+</head>
+<body>
+    <!-- Removed custom navbar - now uses shared navbar injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="leaderboard-container">
+            <h1>Leaderboard</h1>
+            
+            <!-- Tab Navigation -->
+            <div class="tab-navigation">
+                <button class="tab-btn active" data-tab="top-vendors">Top Vendors</button>
+                <button class="tab-btn" data-tab="top-customers">Top Customers</button>
+                <button class="tab-btn" data-tab="trending-products">Trending Products</button>
+                <!-- <button class="tab-btn" data-tab="top-reviews">Top Reviews</button> -->
+            </div>
+
+            <!-- Top Vendors Tab -->
+            <div class="tab-content active" id="top-vendors">
+                <div class="tab-header">
+                    <h2>Top Vendors</h2>
+                    <p>Highest performing sellers on Upstart</p>
+                </div>
+                <div class="leaderboard-list skeleton-list" id="vendorsList">
+                    <!-- Vendor Skeleton Loaders -->
+                    <div class="leaderboard-item-skeleton">
+                        <div class="skeleton-avatar skeleton-loader"></div>
+                        <div class="leaderboard-info-skeleton" style="flex: 1;">
+                            <div class="skeleton-title skeleton-loader" style="margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-loader"></div>
+                        </div>
+                        <div class="skeleton-rank skeleton-loader"></div>
+                    </div>
+                    <div class="leaderboard-item-skeleton">
+                        <div class="skeleton-avatar skeleton-loader"></div>
+                        <div class="leaderboard-info-skeleton" style="flex: 1;">
+                            <div class="skeleton-title skeleton-loader" style="margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-loader"></div>
+                        </div>
+                        <div class="skeleton-rank skeleton-loader"></div>
+                    </div>
+                    <div class="leaderboard-item-skeleton">
+                        <div class="skeleton-avatar skeleton-loader"></div>
+                        <div class="leaderboard-info-skeleton" style="flex: 1;">
+                            <div class="skeleton-title skeleton-loader" style="margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-loader"></div>
+                        </div>
+                        <div class="skeleton-rank skeleton-loader"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Customers Tab -->
+            <div class="tab-content" id="top-customers">
+                <div class="tab-header">
+                    <h2>Top Customers</h2>
+                    <p>Most active buyers</p>
+                </div>
+                <div class="leaderboard-list skeleton-list" id="customersList">
+                    <!-- Customer Skeleton Loaders -->
+                    <div class="leaderboard-item-skeleton">
+                        <div class="skeleton-avatar skeleton-loader"></div>
+                        <div class="leaderboard-info-skeleton" style="flex: 1;">
+                            <div class="skeleton-title skeleton-loader" style="margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-loader"></div>
+                        </div>
+                        <div class="skeleton-rank skeleton-loader"></div>
+                    </div>
+                    <div class="leaderboard-item-skeleton">
+                        <div class="skeleton-avatar skeleton-loader"></div>
+                        <div class="leaderboard-info-skeleton" style="flex: 1;">
+                            <div class="skeleton-title skeleton-loader" style="margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-loader"></div>
+                        </div>
+                        <div class="skeleton-rank skeleton-loader"></div>
+                    </div>
+                    <div class="leaderboard-item-skeleton">
+                        <div class="skeleton-avatar skeleton-loader"></div>
+                        <div class="leaderboard-info-skeleton" style="flex: 1;">
+                            <div class="skeleton-title skeleton-loader" style="margin-bottom: 8px;"></div>
+                            <div class="skeleton-text skeleton-loader"></div>
+                        </div>
+                        <div class="skeleton-rank skeleton-loader"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Trending Products Tab -->
+            <div class="tab-content" id="trending-products">
+                <div class="tab-header">
+                    <h2>Trending Products</h2>
+                    <p>Most viewed and purchased items</p>
+                </div>
+                <div class="products-grid skeleton-grid" id="trendingProducts">
+                    <!-- Product Skeleton Loaders -->
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Reviews Tab -->
+            
+        </div>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content product-details-modal">
+            <button class="modal-close" id="closeProductModal">✕</button>
+            <div class="product-details-container" id="productDetailsContainer">
+                <!-- Product details will be inserted here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Added shared nav and main JS scripts -->
+    <script src=""></script>
+    <script src="shared-nav.js"></script>
+    <script src="leaderboard.js"></script>
+</body>
+</html>

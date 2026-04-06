@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Orders - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="orders.css">
+    <link rel="stylesheet" href="skeleton-loader.css">
+    <link rel="icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png">
+</head>
+<body>
+    <div class="chat-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h2>Orders</h2>
+            </div>
+            <div class="orders-list" id="ordersList">
+                <!-- Orders will be inserted here -->
+                <div class="skeleton-loader" style="height: 70px; margin: 10px; border-radius: 8px;"></div>
+                <div class="skeleton-loader" style="height: 70px; margin: 10px; border-radius: 8px;"></div>
+                <div class="skeleton-loader" style="height: 70px; margin: 10px; border-radius: 8px;"></div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="chat-main">
+            <div class="chat-empty" id="ordersEmpty">
+                <div class="chat-header-empty">
+                    <button class="sidebar-toggle-btn" id="sidebarToggleBtn" title="Toggle orders">
+                        ☰
+                    </button>
+                </div>
+                <div class="empty-icon">📦</div>
+                <p>Select an order to view details</p>
+            </div>
+
+            <div class="order-view" id="orderView" style="display: none;">
+                <div class="chat-header">
+                    <button class="sidebar-toggle-btn" id="sidebarToggleBtnDetail" title="Toggle orders">
+                        ☰
+                    </button>
+                    <div class="order-header-info">
+                        <div class="order-id" id="orderIdHeader">Order #</div>
+                        <div class="order-status-badge" id="orderStatusHeader">Status</div>
+                    </div>
+                </div>
+
+                <div class="order-details-container">
+                    <div class="order-info-section">
+                        <h3>Order Details</h3>
+                        <div class="info-row">
+                            <span class="label">Vendor:</span>
+                            <span class="value" id="vendorName"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Buyer:</span>
+                            <span class="value" id="buyerName"></span>
+                        </div>
+                        <div class="info-row">
+                            <span class="label">Date:</span>
+                            <span class="value" id="orderDate"></span>
+                        </div>
+                         <div class="info-row">
+                            <span class="label">Total:</span>
+                            <span class="value" id="orderTotal"></span>
+                        </div>
+                    </div>
+
+                    <div class="qr-camera-section">
+                        <div class="tabs">
+                            <button class="tab-btn active" onclick="switchTab('qrcode')">QR Code</button>
+                            <button class="tab-btn" onclick="switchTab('camera')">Scan Camera</button>
+                        </div>
+                        
+                        <div class="square-container">
+                            <div id="qrcodeTab" class="tab-content active">
+                                <!-- Placeholder for QR Code -->
+                                <img src="https://api.qrserver.com/v1/create-qr-code/?size=250x250&data=ExampleOrder" alt="QR Code" id="qrCodeImage">
+                                <p class="tab-instruction">Scan this code to verify</p>
+                            </div>
+                            <div id="cameraTab" class="tab-content">
+                                <div class="camera-placeholder">
+                                    <span style="font-size: 48px;">📷</span>
+                                    <p>Camera View</p>
+                                    <button class="action-btn">Start Scanning</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="shared-nav.js"></script>
+    <script src="orders.js"></script>
+</body>
+</html>

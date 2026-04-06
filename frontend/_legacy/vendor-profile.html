@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="profile">
+    <meta property="og:title" content="Vendor Profile - Upstart" id="ogTitle">
+    <meta property="og:image" content="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart(2).png" id="ogImage">
+    <meta property="og:image:width" content="1200" id="ogImageWidth">
+    <meta property="og:image:height" content="630" id="ogImageHeight">
+    <meta property="og:url" content="https://upstart-e9ry.onrender.com/vendor-profile.html" id="ogUrl">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" id="twitterCard">
+    <meta name="twitter:title" content="Vendor Profile - Upstart" id="twitterTitle">    
+    <title>Vendor Profile - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="vendor-profile.css">
+    <link rel="stylesheet" href="skeleton-loader.css">
+    <link rel="icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png">
+</head>
+<body>
+    <!-- Removed custom navbar - now uses shared navbar injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="vendor-container">
+            <!-- Profile Card -->
+            <div class="profile-section">
+                <div class="vendor-header-skeleton">
+                    <div class="skeleton-vendor-avatar skeleton-loader"></div>
+                    <div class="vendor-info-skeleton" style="flex: 1;">
+                        <div class="skeleton-vendor-name skeleton-loader"></div>
+                        <div class="skeleton-vendor-detail skeleton-loader"></div>
+                        <div class="skeleton-vendor-detail skeleton-loader"></div>
+                        <div class="skeleton-vendor-detail skeleton-loader"></div>
+                        <div class="skeleton-vendor-button skeleton-loader"></div>
+                    </div>
+                </div>
+
+                <div id="vendorProfileContent" style="display: none; opacity: 0; transition: opacity 0.5s ease;">
+                    <div class="vendor-header">
+                        <img id="vendorImage" src="/placeholder.svg?height=120&width=120" alt="Vendor" class="vendor-avatar">
+                        <div class="vendor-header-info">
+                            <h1 id="vendorName"></h1>
+                            <p id="vendorUniversity"></p>
+                            <p id="vendorDepartment"></p>
+                            <div class="vendor-rating">
+                                <span class="stars" id="vendorRating">★★★★★</span>
+                                <span id="reviewCount">(0 reviews)</span>
+                            </div>
+                        </div>
+                        <div class="vendor-actions">
+                            <button class="btn-secondary" id="contactBtn">Contact Vendor</button>
+                            <button class="btn-icon" id="shareBtn" aria-label="Share Profile">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="18" cy="5" r="3"></circle>
+                                    <circle cx="6" cy="12" r="3"></circle>
+                                    <circle cx="18" cy="19" r="3"></circle>
+                                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- About Section -->
+                    <div class="about-section">
+                        <h3>About This Seller</h3>
+                        <div class="vendor-bio">
+                            <h4>Bio</h4>
+                            <p id="vendorBio">No bio available.</p>
+                        </div>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <span class="stat-label">Total Sales</span>
+                                <span class="stat-value" id="totalSales">0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Rating</span>
+                                <span class="stat-value" id="avgRating">0.0</span>
+                            </div>
+                            <div class="stat-card">
+                                <span class="stat-label">Products</span>
+                                <span class="stat-value" id="productCount">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs for Products and Content -->
+            <div class="tabs-bar">
+                <button class="tab-btn active" id="tabProducts">Products</button>
+                <button class="tab-btn" id="tabContent">Content</button>
+            </div>
+
+            <!-- Products Section (default visible) -->
+            <section id="productsSection">
+                <div class="products-grid" id="productsGrid">
+                    <!-- Product Skeleton Loaders -->
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Content Section (hidden by default) -->
+            <section id="contentSection" class="hidden">
+                <div class="contents-grid" id="contentsGrid">
+                    <!-- Content items (videos/posts) will be inserted here -->
+                    <div class="empty-inventory" style="grid-column: 1/-1;">
+                        <div class="empty-icon">🎬</div>
+                        <p class="empty-text">No content available from this vendor.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Product Details Modal -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal-content product-details-modal">
+            <button class="modal-close" id="closeProductModal">✕</button>
+            
+            <div class="product-details-container">
+                <!-- Image Gallery -->
+                <div class="product-gallery">
+                    <div class="gallery-main">
+                        <img id="galleryMainImage" src="/placeholder.svg" alt="Product" class="main-image">
+                    </div>
+                    <div class="gallery-thumbnails" id="galleryThumbnails">
+                        <!-- Thumbnails will be added here via JS -->
+                    </div>
+                </div>
+
+                <!-- Product Info -->
+                <div class="product-info">
+                    <h1 id="productName"></h1>
+                    
+                    <div class="product-price">
+                        <span class="price" id="productPrice"></span>
+                    </div>
+
+                    <div class="product-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Available:</span>
+                            <span class="stat-value" id="quantityAvailable">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Views:</span>
+                            <span class="stat-value" id="viewCount">0</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-label">Rating:</span>
+                            <span class="stars" id="productRating" style="color: var(--accent);">★★★★★</span>
+                        </div>
+                    </div>
+
+                    <div class="product-description">
+                        <h3>Description</h3>
+                        <p id="productDescription"></p>
+                    </div>
+
+                    <div class="product-details-grid">
+                        <div class="detail-item">
+                            <span class="detail-label">Location:</span>
+                            <span class="detail-value" id="productLocation"></span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Category:</span>
+                            <span class="detail-value" id="productCategory"></span>
+                        </div>
+                    </div>
+
+                    <div class="product-actions">
+                        <button class="btn-primary" id="addToCartBtn">Add to Cart</button>
+                        <button class="btn-icon" id="shareProductBtn" aria-label="Share Product">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="18" cy="5" r="3"></circle>
+                                <circle cx="6" cy="12" r="3"></circle>
+                                <circle cx="18" cy="19" r="3"></circle>
+                                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="loading-modal" aria-hidden="true">
+        <div class="loading-overlay"></div>
+        <div class="loading-content">
+            <img src="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png" alt="Loading" class="loading-image">
+        </div>
+    </div>
+
+    <!-- Added shared-nav.js to inject universal navbar -->
+    <script src="shared-nav.js"></script>
+    <!-- Added video viewer modal for TikTok-style experience -->
+    <script src="video-viewer.js"></script>
+    <script src="vendor-profile.js"></script>
+</body>
+</html>

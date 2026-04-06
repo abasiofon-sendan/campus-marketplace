@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Inventory - Upstart</title>
+    <link rel="stylesheet" href="index.css">
+    <link rel="stylesheet" href="inventory.css">
+    <link rel="stylesheet" href="skeleton-loader.css">
+    <link rel="icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png" type="image/png">
+    <link rel="apple-touch-icon" href="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png">
+</head>
+<body>
+    <!-- Navbar will be injected by shared-nav.js -->
+
+    <main class="main-content">
+        <div class="inventory-container">
+            <div class="inventory-header">
+                <h1>My Inventory</h1>
+                <div style="display: flex; gap: 20px;">
+                    <button class="btn-primary fab" id="addProductBtn">+ Add Product</button>
+                    <button class="btn-primary fab" id="uploadContentBtn" style="background-color: var(--primary); display: none;">+ Add Content</button>
+                </div>
+            </div>
+
+            <!-- Tabs for Inventory and Content -->
+            <div class="tabs-bar">
+                <button class="tab-btn active" id="tabInventory">Inventory</button>
+                <button class="tab-btn" id="tabContent">Content</button>
+            </div>
+
+            <!-- Inventory section (default visible) -->
+            <section id="inventorySection">
+                <div class="products-grid" id="productsGrid">
+                    <!-- Product Skeleton Loaders -->
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                    <div class="product-card-skeleton">
+                        <div class="skeleton-image skeleton-loader"></div>
+                        <div class="skeleton-title skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-text skeleton-loader"></div>
+                        <div class="skeleton-button skeleton-loader"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Content section (hidden by default) -->
+            <section id="contentSection" class="hidden">
+                <div class="contents-grid" id="contentsGrid">
+                    <!-- Content items (videos/posts) will be inserted here -->
+                    <div class="empty-inventory" style="grid-column: 1/-1;">
+                        <div class="empty-icon">🎬</div>
+                        <p class="empty-text">No content yet. Click "+ Add Content" to add your first piece of content.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Add Product Modal -->
+    <div class="modal-overlay" id="addProductModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeAddProductModal">✕</button>
+            <div class="modal-body">
+                <h2>Add New Product</h2>
+                <form id="addProductForm">
+                    <div class="form-group">
+                        <label>Product Name *</label>
+                        <input type="text" id="productName" required placeholder="Enter product name">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="productDescription" required placeholder="Describe your product" rows="4"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <!-- <div class="form-group">
+                            <label>Color *</label>
+                            <input type="text" id="productColor" required placeholder="e.g., Black, Red">
+                        </div> -->
+                        <div class="form-group">
+                            <label>Price (₦) *</label>
+                            <input type="number" id="productPrice" required placeholder="0.00" step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quantity *</label>
+                            <input type="number" id="productQuantity" required placeholder="1" min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Category *</label>
+                            <select id="productCategory" required>
+                                <option value="">Select Category</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="books">Books</option>
+                                <option value="furniture">Furniture</option>
+                                <option value="clothing">Clothing</option>
+                                <option value="sports">Sports</option>
+                                <option value="others">Others</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- <div class="form-group">
+                        <label>Location *</label>
+                        <input type="text" id="productLocation" required placeholder="Where to pick up">
+                    </div> -->
+
+                    <div class="form-group">
+                        <label>Product Images</label>
+                        <div class="image-upload" onclick="document.getElementById('productImage').click()">
+                            <input type="file" id="productImage" accept="image/*" multiple>
+                            <div class="upload-placeholder">📸 Click to upload or drag and drop (you can select multiple images)</div>
+                        </div>
+                        <!-- Preview thumbnails for selected images -->
+                        <div id="imagePreviewContainer" class="image-preview-container" aria-live="polite"></div>
+                    </div>
+
+                    <!-- <div class="form-group">
+                        <label>Product Video (Optional)</label>
+                        <div class="video-upload" onclick="document.getElementById('productVideo').click()">
+                            <input type="file" id="productVideo" accept="video/*">
+                            <div class="upload-placeholder">🎥 Upload a demo video (MP4, WebM)</div>
+                        </div>
+                    </div> -->
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Add Product</button>
+                        <button type="button" class="btn-secondary cancel-btn" id="cancelAddBtn">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Product Modal -->
+    <div class="modal-overlay" id="editProductModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeEditProductModal">✕</button>
+            <div class="modal-body">
+                <h2>Edit Product</h2>
+                <form id="editProductForm">
+                    <div class="form-group">
+                        <label>Product Name</label>
+                        <input type="text" id="editProductName" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description</label>
+                        <textarea id="editProductDescription" required rows="4"></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Price (₦)</label>
+                            <input type="number" id="editProductPrice" required step="0.01" min="0">
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Quantity</label>
+                            <input type="number" id="editProductQuantity" required min="1">
+                        </div>
+                        <div class="form-group">
+                            <label>Category</label>
+                            <select id="editProductCategory" required>
+                                <option value="electronics">Electronics</option>
+                                <option value="books">Books</option>
+                                <option value="furniture">Furniture</option>
+                                <option value="clothing">Clothing</option>
+                                <option value="sports">Sports</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Location</label>
+                        <input type="text" id="editProductLocation" disabled>
+                    </div>
+
+                    <div class="view-count-display">
+                        Views: <strong id="editViewCount">0</strong>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="submit" class="btn-primary">Save Changes</button>
+                        <button type="button" class="btn-danger" id="deleteProductBtn">Delete Product</button>
+                        <button type="button" class="btn-secondary cancel-btn" id="cancelEditBtn">Close</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="uploadContentModal">
+        <div class="modal-content">
+            <button class="modal-close" id="closeUploadContentModal">✕</button>
+            <div class="modal-body">
+                <h2>Add Content</h2>
+                <form id="uploadModalForm">
+                    <div class="form-group">
+                        <label>Content Video</label>
+                        <div class="video-upload" onclick="document.getElementById('contentVideo').click()">
+                            <input type="file" id="contentVideo" accept="video/*">
+                            <div class="upload-placeholder">🎥 Upload a video (MP4, WebM)</div>
+                        </div>
+                        <!-- Preview container for the selected content video (only one allowed) -->
+                        <div id="contentVideoPreview" class="video-preview-container" aria-live="polite"></div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Caption</label>
+                        <textarea id="caption" required rows="4" placeholder="Describe your content"></textarea>
+                    </div>
+
+
+                     <div class="form-actions">
+                        <button type="submit" class="btn-primary">Upload Content</button>
+                        <button type="button" class="btn-secondary cancel-btn" id="cancelUploadBtn">Close</button>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loadingModal" class="loading-modal" aria-hidden="true">
+        <div class="loading-overlay"></div>
+        <div class="loading-content">
+            <img src="https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png" alt="Loading" class="loading-image">
+        </div>
+    </div>
+
+    <!-- Added shared nav and main JS scripts -->
+    <script src="shared-nav.js"></script>
+    <script src="video-viewer.js"></script>
+    <script src="inventory.js"></script>
+</body>
+</html>

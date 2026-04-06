@@ -1,0 +1,274 @@
+/* Skeleton Loader Styles */
+.skeleton-loader {
+  background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+/* Product Card Skeleton */
+.product-card-skeleton {
+  background: #fff;
+  border-radius: 12px;
+  overflow: hidden;
+  padding: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.product-card-skeleton.fade-out {
+  animation: fadeOut 0.35s forwards;
+}
+
+@keyframes fadeOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
+}
+
+/* Allow other skeleton types to reuse the same fade-out animation */
+.leaderboard-item-skeleton.fade-out,
+.conversation-skeleton.fade-out,
+.vendor-header-skeleton.fade-out,
+.skeleton-list.fade-out,
+.skeleton-grid.fade-out {
+  animation: fadeOut 0.35s forwards;
+}
+
+.skeleton-image {
+  width: 100%;
+  height: 200px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}
+
+.skeleton-title {
+  height: 20px;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-text {
+  height: 16px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+}
+
+.skeleton-text:last-child {
+  margin-bottom: 0;
+}
+
+.skeleton-button {
+  height: 40px;
+  border-radius: 8px;
+  margin-top: 8px;
+}
+
+/* Leaderboard Item Skeleton */
+.leaderboard-item-skeleton {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+
+.skeleton-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.leaderboard-info-skeleton {
+  flex: 1;
+}
+
+.skeleton-rank {
+  width: 40px;
+  height: 32px;
+  border-radius: 4px;
+  margin-left: auto;
+}
+
+/* Chat Message Skeleton */
+.message-skeleton {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 16px;
+  align-items: flex-start;
+}
+
+.message-skeleton .skeleton-avatar {
+  width: 40px;
+  height: 40px;
+}
+
+.message-bubble-skeleton {
+  flex: 1;
+  max-width: 60%;
+}
+
+.skeleton-bubble {
+  height: 40px;
+  border-radius: 12px;
+  margin-bottom: 6px;
+}
+
+.skeleton-timestamp {
+  height: 12px;
+  width: 60px;
+  border-radius: 4px;
+}
+
+/* Conversation List Skeleton */
+.conversation-skeleton {
+  display: flex;
+  gap: 12px;
+  padding: 12px;
+  align-items: center;
+  border-bottom: 1px solid #eee;
+}
+
+.skeleton-large-avatar {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.conversation-info-skeleton {
+  flex: 1;
+}
+
+.skeleton-name {
+  height: 16px;
+  width: 70%;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-message {
+  height: 14px;
+  width: 85%;
+  border-radius: 4px;
+}
+
+/* Cart Item Skeleton */
+.cart-item-skeleton {
+  background: #fff;
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 16px;
+}
+
+.skeleton-product-image {
+  width: 120px;
+  height: 120px;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
+
+.cart-item-info-skeleton {
+  flex: 1;
+}
+
+.skeleton-product-name {
+  height: 18px;
+  width: 60%;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeleton-product-price {
+  height: 20px;
+  width: 40%;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeleton-quantity {
+  height: 36px;
+  width: 100px;
+  border-radius: 6px;
+}
+
+/* Vendor Profile Skeleton */
+.vendor-header-skeleton {
+  background: #fff;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  display: flex;
+  gap: 24px;
+  align-items: flex-start;
+}
+
+.skeleton-vendor-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.vendor-info-skeleton {
+  flex: 1;
+}
+
+.skeleton-vendor-name {
+  height: 28px;
+  width: 50%;
+  border-radius: 4px;
+  margin-bottom: 12px;
+}
+
+.skeleton-vendor-detail {
+  height: 16px;
+  width: 60%;
+  border-radius: 4px;
+  margin-bottom: 8px;
+}
+
+.skeleton-vendor-button {
+  height: 40px;
+  width: 150px;
+  border-radius: 8px;
+  margin-top: 16px;
+}
+
+/* Index Page Skeletons Grid */
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 20px;
+  padding: 20px 0;
+}
+
+/* Leaderboard List Skeletons */
+.skeleton-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Hidden state */
+.hidden {
+  display: none !important;
+}
