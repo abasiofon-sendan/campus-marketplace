@@ -1,8 +1,7 @@
 "use client";
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-
 
 interface Transaction {
     userId: number;
@@ -12,8 +11,14 @@ interface Transaction {
     date: string;
 }
 
+interface Toast {
+    id: number;
+    message: string;
+    type: 'success' | 'error' | 'info';
+}
+
 export default function WalletPage() {
-    const { user } = useAuth();
+    const { user, logout } = useAuth();
     const router = useRouter();
 
     // State
@@ -36,6 +41,21 @@ export default function WalletPage() {
     const [paymentState, setPaymentState] = useState<'loading' | 'success' | 'failed' | 'idle'>('idle');
     const [paymentDetails, setPaymentDetails] = useState<{ amount?: string, reference?: string, message?: string }>({});
 
+    // Toast State
+    const [toasts, setToasts] = useState<Toast[]>([]);
+
+    // Last payment amount for retry
+    const lastPaymentAmountRef = useRef<number>(0);
+
+    // ─── Toast System ───
+    const showToast = useCallback((message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        const id = Date.now() + Math.random();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 3500);
+    }, []);
+
     useEffect(() => {
         if (!user) {
             router.push('/login');
@@ -45,7 +65,9 @@ export default function WalletPage() {
     }, [user]);
 
     const loadWalletData = async () => {
-        // Check pending payment
+        if (!user) return;
+
+        // Check pending payment on return from Paystack
         const pendingRef = sessionStorage.getItem("pendingPaymentReference");
         const pendingAmt = sessionStorage.getItem("pendingPaymentAmount");
 
@@ -64,22 +86,47 @@ export default function WalletPage() {
                 }
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                if (data && typeof data.balance === 'number') {
-                    setBalance(data.balance);
+            if (!response.ok) {
+                if (response.status === 401) {
+                    showToast('Session expired. Redirecting to login...', 'error');
+                    setTimeout(() => logout(), 1500);
+                    return;
                 }
+                showToast('Failed to load wallet data.', 'error');
+                return;
             }
 
-            // Load local transactions for demo (legacy did this via localStorage)
-            // Ideally this would come from an API, but legacy wallet.js line 163-164 reads from localStorage
-            const stored = localStorage.getItem("transactions");
-            const allTrans = stored ? JSON.parse(stored) : [];
-            const userTrans = allTrans.filter((t: any) => t.userId === user.user.id);
-            setTransactions(userTrans.reverse());
+            const data = await response.json();
+            if (data && typeof data.balance === 'number') {
+                setBalance(data.balance);
+            }
+
+            // Load real transactions from API
+            const historyResponse = await fetch('https://upstartpy.onrender.com/wallet/history/', {
+                method: "GET",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${user.access}`
+                }
+            });
+
+            if (historyResponse.ok) {
+                const historyData = await historyResponse.json();
+                // Map the backend structure to our local interface if needed
+                // Backend returns: { id, amount, status, transaction_type, reference, history_type, date, type, description }
+                setTransactions(historyData);
+            } else {
+                console.error("Failed to load history from API");
+                // Fallback to local transactions (legacy)
+                const stored = localStorage.getItem("transactions");
+                const allTrans = stored ? JSON.parse(stored) : [];
+                const userTrans = allTrans.filter((t: any) => t.userId === user.user?.id);
+                setTransactions(userTrans.reverse());
+            }
 
         } catch (error) {
             console.error("Error loading wallet", error);
+            showToast('Failed to load wallet. Check your connection.', 'error');
         }
     };
 
@@ -96,39 +143,58 @@ export default function WalletPage() {
                 }
             });
 
-            const result = await response.json();
-
-            if (response.ok && result.status === "success") {
-                setPaymentState('success');
-                setPaymentDetails({
-                    amount: `₦${amount.toFixed(2)}`,
-                    reference: reference
-                });
-                setTimeout(() => {
-                    setPaymentModalOpen(false);
-                    loadWalletData();
-                }, 2500);
-            } else {
+            if (!response.ok) {
+                console.error('Verification failed:', response.status);
                 setPaymentState('failed');
                 setPaymentDetails({
                     reference: reference,
-                    message: result.message || "Payment verification failed"
+                    message: "Payment verification failed. Please contact support."
                 });
+                showToast('Payment verification failed.', 'error');
+                return;
             }
+
+            const result = await response.json();
+
+            // Backend returns { data: {...}, wallet_balance: ... } on success
+            // response.ok means verification succeeded
+            setPaymentState('success');
+            setPaymentDetails({
+                amount: `₦${amount.toFixed(2)}`,
+                reference: reference
+            });
+            showToast(`Payment of ₦${amount.toFixed(2)} successful!`, 'success');
+
+            // Reload wallet data after a short delay
+            setTimeout(() => {
+                setPaymentModalOpen(false);
+                setPaymentState('idle');
+                loadWalletData();
+            }, 2500);
+
         } catch (e) {
-            console.error(e);
+            console.error("Verification error:", e);
             setPaymentState('failed');
             setPaymentDetails({
                 reference: reference,
-                message: "Connection error verifying payment"
+                message: "Unable to verify payment. Please contact support."
             });
+            showToast('Failed to verify payment. Check your connection.', 'error');
         }
     };
 
     const handleAddMoney = async () => {
         const amount = parseFloat(addAmount);
-        if (!amount || amount <= 0) return alert("Enter valid amount");
-        if (amount > 1000000) return alert("Amount exceeds limit");
+        if (!amount || amount <= 0) {
+            showToast("Please enter a valid amount", 'error');
+            return;
+        }
+        if (amount > 1000000) {
+            showToast("Amount exceeds maximum limit of ₦1,000,000", 'error');
+            return;
+        }
+
+        lastPaymentAmountRef.current = amount;
 
         setIsAddMoneyOpen(false);
         setDrawerOverlayOpen(false);
@@ -146,9 +212,15 @@ export default function WalletPage() {
             });
 
             if (!response.ok) {
-                const err = await response.json();
+                const err = await response.json().catch(() => ({}));
+                if (response.status === 401) {
+                    showToast('Session expired. Redirecting to login...', 'error');
+                    setTimeout(() => logout(), 1500);
+                    return;
+                }
                 setPaymentState('failed');
-                setPaymentDetails({ message: err.detail || "Initialization failed" });
+                setPaymentDetails({ message: err.detail || err.error || "Payment initialization failed. Please try again." });
+                showToast(err.detail || 'Failed to initialize payment', 'error');
                 return;
             }
 
@@ -159,29 +231,45 @@ export default function WalletPage() {
                 window.location.href = data.details.data.authorization_url;
             } else {
                 setPaymentState('failed');
-                setPaymentDetails({ message: "Invalid response from payment provider" });
+                setPaymentDetails({ message: "Failed to initialize payment. Please try again." });
+                showToast("Failed to initialize payment.", 'error');
             }
 
         } catch (e) {
             setPaymentState('failed');
-            setPaymentDetails({ message: "Network error" });
+            setPaymentDetails({ message: "An error occurred. Please try again." });
+            showToast("Failed to process payment. Check your connection.", 'error');
         }
+    };
+
+    const retryPayment = () => {
+        setPaymentModalOpen(false);
+        setPaymentState('idle');
+        if (lastPaymentAmountRef.current > 0) {
+            setAddAmount(lastPaymentAmountRef.current.toString());
+        }
+        setIsAddMoneyOpen(true);
+        setDrawerOverlayOpen(true);
     };
 
     const handleWithdraw = () => {
         const amount = parseFloat(withdrawAmount);
-        if (!amount || amount <= 0) return alert("Enter valid amount");
-        if (!bankAccount || !routingNumber) return alert("Enter bank details");
-        if (balance < amount) return alert("Insufficient balance");
+        if (!amount || amount <= 0) {
+            showToast("Please enter a valid amount", 'error');
+            return;
+        }
+        if (!bankAccount || !routingNumber) {
+            showToast("Please fill in all bank details", 'error');
+            return;
+        }
+        if (balance < amount) {
+            showToast("Insufficient balance", 'error');
+            return;
+        }
 
-        // Simulate withdrawal (legacy logic: update localStorage user balance?)
-        // Since we are using API for balance, we should ideally have a withdrawal endpoint.
-        // Legacy wallet.js line 368 updates local storage user object directly.
-        // This is tricky if the API is the source of truth for balance.
-        // For now, we will simulate it locally as per legacy or show success message.
-
+        // Record transaction locally (no backend withdrawal endpoint yet)
         const newTrans: Transaction = {
-            userId: user.user.id,
+            userId: user.user?.id,
             type: "debit",
             amount: amount,
             description: "Withdrew from wallet",
@@ -193,17 +281,15 @@ export default function WalletPage() {
         allTrans.push(newTrans);
         localStorage.setItem("transactions", JSON.stringify(allTrans));
 
-        // Optimistic update locally? We can't update API balance without an endpoint.
-        // Assuming legacy means we just record the transaction locally for now.
-        setBalance(prev => prev - amount); // Optimistic UI update
-        alert(`Successfully withdrew ₦${amount.toFixed(2)}`);
+        setBalance(prev => prev - amount);
+        showToast(`Successfully withdrew ₦${amount.toFixed(2)}`, 'success');
 
         setIsWithdrawOpen(false);
         setDrawerOverlayOpen(false);
         setWithdrawAmount('');
         setBankAccount('');
         setRoutingNumber('');
-        loadWalletData(); // Refresh list
+        loadWalletData();
     };
 
     const closeDrawers = () => {
@@ -214,6 +300,21 @@ export default function WalletPage() {
 
     return (
         <div className="w-full max-w-[1400px] mx-auto py-10 px-5 font-sans text-gray-900">
+            {/* Toast Container */}
+            <div className="fixed top-5 right-5 z-[10000] flex flex-col gap-2" id="toastContainer">
+                {toasts.map(toast => (
+                    <div
+                        key={toast.id}
+                        className={`px-4 py-3 rounded-lg text-white text-sm shadow-lg animate-[slideIn_0.3s_ease] transition-opacity duration-300 ${toast.type === 'error' ? 'bg-red-500' :
+                                toast.type === 'success' ? 'bg-green-500' :
+                                    'bg-blue-500'
+                            }`}
+                    >
+                        {toast.message}
+                    </div>
+                ))}
+            </div>
+
             <div className="flex flex-col gap-6">
                 {/* Balance Card */}
                 <div className="bg-gradient-to-br from-[#1c6ef2] to-[#1a5bcc] text-white rounded-xl p-10 text-center shadow-lg shadow-[#1c6ef2]/30">
@@ -226,7 +327,7 @@ export default function WalletPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <button
                         className="w-full py-3.5 px-5 border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 bg-amber-400 text-white hover:-translate-y-0.5 hover:shadow-lg"
-                        onClick={() => { setIsAddMoneyOpen(true); setDrawerOverlayOpen(true); }}
+                        onClick={() => { setIsAddMoneyOpen(true); setDrawerOverlayOpen(true); setAddAmount(''); }}
                     >
                         + Add Money
                     </button>
@@ -334,7 +435,7 @@ export default function WalletPage() {
                             <input
                                 type="text"
                                 placeholder="GTBank, Zenith, etc."
-                                value={routingNumber} // Using routingNumber var for Bank Name per legacy UI field
+                                value={routingNumber}
                                 onChange={(e) => setRoutingNumber(e.target.value)}
                                 className="w-full px-3.5 py-3 border border-gray-200 rounded-lg text-sm text-gray-900 transition-all duration-300 focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-600/10"
                             />
@@ -364,8 +465,10 @@ export default function WalletPage() {
                     )}
                     {paymentState === 'success' && (
                         <div className="min-h-[300px] flex flex-col items-center justify-center">
-                            <div className="mb-6 flex justify-center scale-100 animate-[scaleIn_0.5s_cubic-bezier(0.34,1.56,0.64,1)]">
-                                <span className="text-5xl text-green-500">✓</span>
+                            <div className="mb-6 flex justify-center">
+                                <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+                                    <span className="text-3xl text-green-500">✓</span>
+                                </div>
                             </div>
                             <h3 className="text-2xl font-bold mb-3 text-gray-900">Payment Successful!</h3>
                             <p className="text-sm text-gray-600 mb-6">Your wallet has been funded.</p>
@@ -374,14 +477,14 @@ export default function WalletPage() {
                                     <span className="text-[13px] text-gray-600 font-medium">Amount</span>
                                     <span className="text-[13px] text-gray-900 font-semibold break-all">{paymentDetails.amount}</span>
                                 </div>
-                                <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                                <div className="flex justify-between items-center py-2">
                                     <span className="text-[13px] text-gray-600 font-medium">Reference</span>
                                     <span className="text-[13px] text-gray-900 font-semibold break-all">{paymentDetails.reference}</span>
                                 </div>
                             </div>
                             <button
                                 className="w-full py-3 px-6 bg-blue-600 text-white border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 hover:bg-blue-700 hover:shadow-lg"
-                                onClick={() => setPaymentModalOpen(false)}
+                                onClick={() => { setPaymentModalOpen(false); setPaymentState('idle'); }}
                             >
                                 Close
                             </button>
@@ -389,27 +492,44 @@ export default function WalletPage() {
                     )}
                     {paymentState === 'failed' && (
                         <div className="min-h-[300px] flex flex-col items-center justify-center">
-                            <div className="mb-6 flex justify-center animate-[shake_0.5s_ease]">
-                                <span className="text-5xl text-red-500">✕</span>
+                            <div className="mb-6 flex justify-center">
+                                <div className="w-16 h-16 rounded-full bg-red-100 flex items-center justify-center">
+                                    <span className="text-3xl text-red-500">✕</span>
+                                </div>
                             </div>
                             <h3 className="text-2xl font-bold mb-3 text-gray-900">Payment Failed</h3>
                             <p className="text-sm text-gray-600 mb-6">{paymentDetails.message}</p>
                             <div className="bg-gray-50 rounded-lg p-4 mb-6 text-left w-full">
-                                <div className="flex justify-between items-center py-2 border-b border-gray-200 last:border-0">
+                                <div className="flex justify-between items-center py-2">
                                     <span className="text-[13px] text-gray-600 font-medium">Reference</span>
                                     <span className="text-[13px] text-gray-900 font-semibold break-all">{paymentDetails.reference || 'N/A'}</span>
                                 </div>
                             </div>
-                            <button
-                                className="w-full py-3 px-6 bg-blue-600 text-white border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 hover:bg-blue-700 hover:shadow-lg"
-                                onClick={() => setPaymentModalOpen(false)}
-                            >
-                                Try Again
-                            </button>
+                            <div className="flex gap-3 w-full">
+                                <button
+                                    className="flex-1 py-3 px-6 bg-gray-200 text-gray-700 border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 hover:bg-gray-300"
+                                    onClick={() => { setPaymentModalOpen(false); setPaymentState('idle'); }}
+                                >
+                                    Close
+                                </button>
+                                <button
+                                    className="flex-1 py-3 px-6 bg-blue-600 text-white border-none rounded-lg text-sm font-semibold cursor-pointer transition-all duration-300 hover:bg-blue-700 hover:shadow-lg"
+                                    onClick={retryPayment}
+                                >
+                                    Try Again
+                                </button>
+                            </div>
                         </div>
                     )}
                 </div>
             </div>
+
+            <style jsx>{`
+                @keyframes slideIn {
+                    from { transform: translateX(100%); opacity: 0; }
+                    to { transform: translateX(0); opacity: 1; }
+                }
+            `}</style>
         </div>
     );
 }

@@ -21,6 +21,17 @@ export default function Home(): JSX.Element {
 
   useEffect(() => {
     fetchProducts();
+
+    // Auto-open product modal if productId is in URL
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const productId = params.get('productId');
+      if (productId) {
+        handleProductClick({ id: productId });
+        // Optionally clean up URL so it doesn't reopen on refresh
+        window.history.replaceState({}, document.title, window.location.pathname);
+      }
+    }
   }, [user]);
 
   async function fetchProducts() {
@@ -93,11 +104,11 @@ export default function Home(): JSX.Element {
     <>
       <div className="max-w-[1600px] mx-auto px-5 py-10 min-h-[calc(100vh-140px)]">
         <HeroBanner />
-        
-        <CategoryNav 
-          categories={categories} 
-          currentCategory={currentCategory} 
-          onSelectCategory={setCurrentCategory} 
+
+        <CategoryNav
+          categories={categories}
+          currentCategory={currentCategory}
+          onSelectCategory={setCurrentCategory}
         />
 
         {/* Flash Sales Section */}

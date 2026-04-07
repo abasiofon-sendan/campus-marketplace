@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { Search, ShoppingCart, User, Menu, X, Bell, LogOut, LayoutDashboard, Package, Home, Trophy, BarChart2, Wallet, MessageSquare } from 'lucide-react';
 
@@ -13,7 +14,8 @@ type Notification = {
 };
 
 export default function Navbar() {
-    const { user, logout } = useAuth();
+    const { user, loading, logout } = useAuth();
+    const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
@@ -156,9 +158,12 @@ export default function Navbar() {
 
     const isVendor = (user?.user?.role || user?.role || '').toLowerCase() === 'vendor'; // Handle potentially different structures case-insensitively
 
+    const showSearchBar = pathname === '/' || pathname === '/vendor-profile';
+    const isFullWidthPage = pathname === '/chat' || pathname === '/orders' || pathname === '/cart';
+
     return (
         <nav className="fixed top-0 left-0 right-0 bg-[#f4f6fa] backdrop-blur-md border-b border-gray-200 z-[100] py-[12px] px-[20px] shadow-legacy-nav h-[70px]">
-            <div className="max-w-[1400px] mx-auto flex items-center justify-between gap-5 h-full">
+            <div className={`${isFullWidthPage ? '' : 'max-w-[1400px]'} mx-auto flex items-center justify-between gap-5 h-full`}>
                 {/* Mobile Menu Button - Left */}
                 <button className="md:hidden p-2 -mr-3 text-gray-900 hover:text-blue-600" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                     {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -176,26 +181,30 @@ export default function Navbar() {
                 </div>
 
                 {/* Center Section: Search Bar (Desktop) */}
-                <div className="hidden md:flex flex-1 max-w-[500px] items-center justify-center">
-                    <div className="relative w-full">
-                        <input
-                            type="text"
-                            className="w-full h-[44px] pl-4 pr-10 rounded-full border border-gray-200 bg-gray-50 text-sm transition-all focus:outline-none focus:border-blue-600 focus:bg-white text-gray-900"
-                            placeholder="Search products..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                        />
-                        <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                {showSearchBar && (
+                    <div className="hidden md:flex flex-1 max-w-[500px] items-center justify-center">
+                        <div className="relative w-full">
+                            <input
+                                type="text"
+                                className="w-full h-[44px] pl-4 pr-10 rounded-full border border-gray-200 bg-gray-50 text-sm transition-all focus:outline-none focus:border-blue-600 focus:bg-white text-gray-900"
+                                placeholder="Search products..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">🔍</span>
+                        </div>
                     </div>
-                </div>
+                )}
 
                 {/* Right Section: Navigation Items */}
                 <div className="flex items-center gap-3">
 
                     {/* Mobile Search Toggle */}
-                    <button className="md:hidden p-2 text-gray-600" title="Search">
-                        🔍
-                    </button>
+                    {showSearchBar && (
+                        <button className="md:hidden p-2 text-gray-600" title="Search">
+                            🔍
+                        </button>
+                    )}
 
                     {/* Leaderboard - Desktop Only (Always visible) */}
                     <div className="hidden md:block">

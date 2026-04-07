@@ -30,6 +30,113 @@ interface Conversation {
     [key: string]: any;
 }
 
+const productCache: Record<string, any> = {};
+
+const ProductLinkPreview = ({ url }: { url: string }) => {
+    const [product, setProduct] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+
+    let productId: string | null = null;
+    try {
+        productId = new URL(url).searchParams.get("productId");
+    } catch {
+        // Malformed URL — just render as a plain link
+    }
+
+    useEffect(() => {
+        if (!productId) {
+            setLoading(false);
+            setError(true);
+            return;
+        }
+
+        // Check cache first
+        if (productCache[productId]) {
+            setProduct(productCache[productId]);
+            setLoading(false);
+            return;
+        }
+
+        let cancelled = false;
+        fetch(`https://upstartpy.onrender.com/products/${productId}`)
+            .then(res => {
+                if (!res.ok) throw new Error('Not found');
+                return res.json();
+            })
+            .then(data => {
+                if (!cancelled) {
+                    productCache[productId!] = data;
+                    setProduct(data);
+                    setLoading(false);
+                }
+            })
+            .catch(() => {
+                if (!cancelled) {
+                    setError(true);
+                    setLoading(false);
+                }
+            });
+
+        return () => { cancelled = true; };
+    }, [productId]);
+
+    // Loading skeleton
+    if (loading) {
+        return (
+            <div className="mt-2 bg-white/80 rounded-xl border border-gray-100 max-w-[260px] overflow-hidden animate-pulse">
+                <div className="h-[100px] bg-gray-200" />
+                <div className="p-2.5 space-y-2">
+                    <div className="h-3 bg-gray-200 rounded w-3/4" />
+                    <div className="h-2.5 bg-gray-200 rounded w-1/2" />
+                </div>
+            </div>
+        );
+    }
+
+    // Error or no product — fall back to clickable link
+    if (error || !product || !product.product_name) {
+        return <a href={url} target="_blank" rel="noopener noreferrer" className="underline opacity-90 hover:opacity-100 break-all">{url}</a>;
+    }
+
+    return (
+        <div className="mt-2 text-black bg-white/95 rounded-xl shadow-sm border border-gray-100 cursor-pointer max-w-[260px] overflow-hidden transition-all hover:shadow-md" onClick={() => window.open(url, '_blank')}>
+            <div className="h-[120px] bg-gray-50 overflow-hidden relative">
+               <img src={(product.image_url && product.image_url[0]) || '/placeholder.svg'} className="w-full h-full object-cover" alt="Product" />
+               <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-bold px-2 py-1 rounded backdrop-blur-sm">
+                   ₦{product.price}
+               </div>
+            </div>
+            <div className="p-2.5 flex flex-col">
+               <span className="font-semibold text-sm truncate leading-tight text-gray-900">{product.product_name}</span>
+               <span className="text-[11px] text-gray-500 line-clamp-2 mt-1 leading-snug">{product.description || 'No description available'}</span>
+            </div>
+        </div>
+    );
+};
+
+const MessageContent = ({ text }: { text: string }) => {
+    const urlSplitRegex = /(https?:\/\/[^\s]+)/g;
+    const urlTestRegex = /^https?:\/\/[^\s]+$/;
+    const parts = text.split(urlSplitRegex);
+    
+    return (
+        <div style={{ wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
+            {parts.map((part, i) => {
+                if (urlTestRegex.test(part)) {
+                    if (part.includes("productId=")) {
+                        return <ProductLinkPreview key={i} url={part} />;
+                    } else {
+                        return <a key={i} href={part} target="_blank" rel="noopener noreferrer" className="underline opacity-90 hover:opacity-100 break-all">{part}</a>;
+                    }
+                }
+                if (!part) return null; // skip empty strings from split
+                return <span key={i}>{part}</span>;
+            })}
+        </div>
+    );
+};
+
 export default function ChatPage() {
     const { user } = useAuth();
     const router = useRouter();
@@ -45,51 +152,100 @@ export default function ChatPage() {
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const sidebarRef = useRef<HTMLDivElement>(null);
     const chatContainerRef = useRef<HTMLDivElement>(null);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    // Dynamic Online Status Logic (Timer based)
+    const activeConversationIdRef = useRef<number | null>(null);
+    const statusTransitionTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+    const vendorIdParamRef = useRef<string | null>(null);
+    const textParamRef = useRef<string | null>(null);
+
     const [headerStatus, setHeaderStatus] = useState<string>("Online");
 
     // Connect to WebSocket
     useEffect(() => {
         if (!user) return;
 
-        const ws = new WebSocket(`wss://upstartpy.onrender.com/ws/chat?token=${user.access}`);
+        const initializeChat = async () => {
+            if (typeof window !== 'undefined') {
+                const params = new URLSearchParams(window.location.search);
+                vendorIdParamRef.current = params.get('vendorId');
+                textParamRef.current = params.get('text');
+                
+                // Clear the URL params without reloading the page
+                if (vendorIdParamRef.current || textParamRef.current) {
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                }
+            }
 
-        ws.onopen = () => {
-            console.log("WS Connected");
-            setLoading(false);
-        };
+            if (vendorIdParamRef.current) {
+                try {
+                    await fetch(`https://upstartpy.onrender.com/api/chat/create/${vendorIdParamRef.current}`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${user.access}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } catch (error) {
+                    console.error("Error creating chat:", error);
+                }
+            }
+
+            const ws = new WebSocket(`wss://upstartpy.onrender.com/ws/chat?token=${user.access}`);
+
+            ws.onopen = () => {
+                console.log("WS Connected");
+                setLoading(false);
+            };
 
         ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                handleWebSocketMessage(data);
+                handleWebSocketMessage(data, ws);
             } catch (e) {
                 console.error("WS Message Error", e);
             }
         };
 
-        ws.onclose = () => {
-            console.log("WS Closed");
+            ws.onclose = () => {
+                console.log("WS Closed");
+            };
+
+            setSocket(ws);
+
+            return () => {
+                ws.close();
+            };
         };
 
-        setSocket(ws);
-
-        return () => {
-            ws.close();
-        };
+        initializeChat();
     }, [user]);
 
     // Handle incoming messages
-    const handleWebSocketMessage = (data: any) => {
+    const handleWebSocketMessage = (data: any, ws: WebSocket) => {
+        const currentActiveConvId = activeConversationIdRef.current;
         switch (data.type) {
             case 'conversation_list':
                 setConversations(data.conversations || []);
+                
+                if (vendorIdParamRef.current) {
+                    const conv = data.conversations?.find((c: any) => c.other_user.id.toString() === vendorIdParamRef.current);
+                    if (conv && !activeConversationIdRef.current) {
+                        selectConversation(conv, ws);
+                        if (textParamRef.current) {
+                            setMessageText(textParamRef.current);
+                        }
+                        // Clear the ref so we don't keep selecting it if conversations update
+                        vendorIdParamRef.current = null;
+                        textParamRef.current = null;
+                    }
+                }
                 break;
             case 'my_messages':
                 console.log("Messages received", data.messages);
                 setMessages(data.messages || []);
-                scrollToBottom();
+                scrollToBottom(false);
                 break;
             case 'new_message':
                 const newMsg: Message = {
@@ -100,50 +256,68 @@ export default function ChatPage() {
                     is_read: false
                 };
 
-                if (activeConversationId === data.conversation_id) {
+                if (currentActiveConvId === data.conversation_id) {
                     setMessages(prev => [...prev, newMsg]);
-                    scrollToBottom();
+                    scrollToBottom(true);
                     // If we are looking at this conversation, mark as read immediately
-                    if (socket && socket.readyState === WebSocket.OPEN) {
-                        socket.send(JSON.stringify({
-                            action: "mark_as_read",
-                            conversation_id: data.conversation_id
-                        }));
+                    // Only mark if the sender is not us
+                    if (data.sender !== user.user.id) {
+                        if (ws && ws.readyState === WebSocket.OPEN) {
+                            ws.send(JSON.stringify({
+                                action: "mark_as_read",
+                                conversation_id: data.conversation_id
+                            }));
+                        }
                     }
                 }
 
-                // Update conversation list preview
-                setConversations(prev => prev.map(c => {
-                    if (c.id === data.conversation_id) {
-                        return {
-                            ...c,
-                            last_message: {
-                                text: data.message,
-                                timestamp: data.timestamp,
-                                sender: data.sender,
-                                is_read: false
-                            },
-                            unread_count: (data.sender !== user.user.id && activeConversationId !== data.conversation_id)
-                                ? (c.unread_count || 0) + 1
-                                : c.unread_count
-                        };
-                    }
-                    return c;
-                }));
+                // Update conversation list preview and sort by newest message
+                setConversations(prev => {
+                    const updatedConvs = prev.map(c => {
+                        if (c.id === data.conversation_id) {
+                            return {
+                                ...c,
+                                last_message: {
+                                    text: data.message,
+                                    timestamp: data.timestamp,
+                                    sender: data.sender,
+                                    is_read: false
+                                },
+                                unread_count: (data.sender !== user.user.id && currentActiveConvId !== data.conversation_id)
+                                    ? (c.unread_count || 0) + 1
+                                    : 0 // Clear if we are actively looking at it
+                            };
+                        }
+                        return c;
+                    });
+                    
+                    // Sort descending (newest on top) based on the timestamp of the last message
+                    return updatedConvs.sort((a, b) => {
+                        const timeA = a.last_message?.timestamp ? new Date(a.last_message.timestamp).getTime() : 0;
+                        const timeB = b.last_message?.timestamp ? new Date(b.last_message.timestamp).getTime() : 0;
+                        return timeB - timeA;
+                    });
+                });
                 break;
             case 'mark_chat':
                 // Update read status for messages
-                if (data.conversation_id === activeConversationId) {
-                    // Mark all local messages as read if I am the sender, or if I just read them? 
-                    // Legacy logic: if data.sender === current.user.id -> means I marked them read?
-                    // Actually legacy: const isSent = data.sender === currentUser.user.id
-                    // markAsRead(data.conversation_id, isSent).
+                if (data.conversation_id === currentActiveConvId) {
                     // Logic: "Only update if the OTHER person is reading MY messages".
-
-                    // If data.sender is NOT me, it means they read my messages.
                     if (data.sender !== user.user.id) {
                         setMessages(prev => prev.map(m => m.sender === user.user.id ? { ...m, is_read: true } : m));
                     }
+                }
+                // Update conversation list sidebar
+                if (data.sender !== user.user.id) {
+                    setConversations(prev => prev.map(c => {
+                        if (c.id === data.conversation_id && c.last_message && c.last_message.sender === user.user.id) {
+                            return {
+                                ...c,
+                                last_message: { ...c.last_message, is_read: true }
+                            };
+                        }
+                        return c;
+                    }));
                 }
                 break;
             default:
@@ -151,8 +325,9 @@ export default function ChatPage() {
         }
     };
 
-    const selectConversation = (conv: Conversation) => {
+    const selectConversation = (conv: Conversation, activeWs: WebSocket | null = socket) => {
         setActiveConversationId(conv.id);
+        activeConversationIdRef.current = conv.id;
 
         // Mobile sidebar handling
         if (window.innerWidth <= 768) {
@@ -160,14 +335,14 @@ export default function ChatPage() {
         }
 
         // Fetch messages for this conversation
-        if (socket && socket.readyState === WebSocket.OPEN) {
-            socket.send(JSON.stringify({
+        if (activeWs && activeWs.readyState === WebSocket.OPEN) {
+            activeWs.send(JSON.stringify({
                 action: "get_message",
                 conversation_id: conv.id
             }));
 
             // Mark as read
-            socket.send(JSON.stringify({
+            activeWs.send(JSON.stringify({
                 action: "mark_as_read",
                 conversation_id: conv.id
             }));
@@ -176,33 +351,63 @@ export default function ChatPage() {
         // Reset unread count locally for UI
         setConversations(prev => prev.map(c => c.id === conv.id ? { ...c, unread_count: 0 } : c));
 
+        if (statusTransitionTimerRef.current) {
+            clearTimeout(statusTransitionTimerRef.current);
+            statusTransitionTimerRef.current = null;
+        }
+
         // Online Status logic
         if (conv.other_user.status) {
             setHeaderStatus("Online");
         } else {
-            // Replicate legacy transition logic if desired, or simpler:
-            const lastSeen = new Date(conv.other_user.last_seen);
-            setHeaderStatus(lastSeen.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+            const lastSeenDate = new Date(conv.other_user.last_seen);
+            // Show full date/time initially
+            setHeaderStatus(lastSeenDate.toLocaleString([], { weekday: "short", month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" }));
+
+            // Transition to time-only after 3 seconds
+            statusTransitionTimerRef.current = setTimeout(() => {
+                setHeaderStatus(lastSeenDate.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
+            }, 3000);
+        }
+    };
+
+    const resetTextareaHeight = () => {
+        if (textareaRef.current) {
+            textareaRef.current.style.height = 'auto';
         }
     };
 
     const sendMessage = (e?: React.FormEvent) => {
         if (e) e.preventDefault();
-        if (!messageText.trim() || !activeConversationId || !socket) return;
+        
+        const text = messageText.trim();
+        if (!text) {
+            setMessageText("");
+            resetTextareaHeight();
+            return;
+        }
+        
+        if (!activeConversationId || !socket) return;
 
         socket.send(JSON.stringify({
             action: "send_message",
             conversation_id: activeConversationId,
-            message: messageText
+            message: text
         }));
 
         setMessageText("");
+        resetTextareaHeight();
     };
 
-    const scrollToBottom = () => {
+    const scrollToBottom = (smooth = false) => {
         setTimeout(() => {
             const list = document.getElementById("messagesList");
-            if (list) list.scrollTop = list.scrollHeight;
+            if (list) {
+                list.scrollTo({
+                    top: list.scrollHeight,
+                    behavior: smooth ? 'smooth' : 'auto'
+                });
+            }
         }, 100);
     };
 
@@ -224,6 +429,16 @@ export default function ChatPage() {
 
     return (
         <div className="flex h-[calc(100vh-70px)] overflow-hidden relative md:grid md:grid-cols-[300px_1fr]" ref={chatContainerRef}>
+            <style>{`
+                @keyframes popInMessage {
+                    0% { opacity: 0; transform: translateY(16px) scale(0.98); }
+                    100% { opacity: 1; transform: translateY(0) scale(1); }
+                }
+                .animate-pop-in {
+                    animation: popInMessage 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.1) forwards;
+                }
+            `}</style>
+            
             {/* Mobile Overlay */}
             {isSidebarOpen && (
                 <div 
@@ -267,7 +482,9 @@ export default function ChatPage() {
                                         {(conv.unread_count || 0) > 0 && <span className="bg-[#ff4d4d] text-white rounded-full px-2 py-0.5 text-xs font-semibold ml-2 inline-block">{conv.unread_count}</span>}
                                     </div>
                                     <div className="flex items-center gap-2 text-xs text-[#4b4b4b]">
-                                        <span className="flex-1 min-w-0 truncate">{conv.last_message?.text || "No messages yet"}</span>
+                                        <span className="flex-1 min-w-0 truncate">
+                                            {!conv.last_message ? "No messages yet" : (isSent ? `You: ${conv.last_message.text}` : conv.last_message.text)}
+                                        </span>
                                         <span className="shrink-0 text-[#4b4b4b] whitespace-nowrap opacity-95">{readStatus}</span>
                                     </div>
                                 </div>
@@ -307,35 +524,66 @@ export default function ChatPage() {
                         <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 flex flex-col gap-3 pb-4 sm:p-3 sm:gap-2" id="messagesList">
                             {messages.map((msg, idx) => {
                                 const isSent = msg.sender === user.user.id;
-                                const isLastMessage = idx === messages.length - 1;
+                                const lastSentIdx = messages.map(m => m.sender).lastIndexOf(user.user.id);
+                                const isLastSentMessage = isSent && idx === lastSentIdx;
+                                
                                 let statusText = "";
-                                if (isSent && isLastMessage) {
+                                if (isLastSentMessage) {
                                     statusText = msg.is_read ? " • Seen" : " • Delivered";
                                 }
 
+                                const nextMsg = messages[idx + 1];
+                                let showTimestamp = true;
+                                if (nextMsg && nextMsg.sender === msg.sender) {
+                                    const currDate = new Date(msg.timestamp);
+                                    const nextDate = new Date(nextMsg.timestamp);
+                                    if (currDate.getHours() === nextDate.getHours() && currDate.getMinutes() === nextDate.getMinutes()) {
+                                        showTimestamp = false;
+                                    }
+                                }
+                                if (statusText) showTimestamp = true;
+
                                 return (
-                                    <div key={idx} className={`flex flex-col max-w-full ${isSent ? "items-end" : "items-start"}`}>
-                                        <div className={`p-3 px-3.5 rounded-xl text-sm leading-relaxed inline-block max-w-[70%] break-words sm:max-w-[75%] ${isSent ? "bg-[#1c6ef2] text-white" : "bg-[#ffb800] text-white"}`}>{msg.text}</div>
-                                        <div className="text-[11px] text-[#4b4b4b] mt-1 ml-0.5 sm:text-[10px]">
-                                            {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                                            {statusText}
-                                        </div>
+                                    <div key={idx} className={`animate-pop-in flex flex-col max-w-full ${isSent ? "items-end" : "items-start"} ${!showTimestamp ? '-mb-1.5 sm:-mb-1' : ''}`}>
+                                        <div className={`p-3 px-3.5 rounded-xl text-sm leading-relaxed inline-block max-w-[70%] sm:max-w-[85%] ${isSent ? "bg-[#1c6ef2] text-white" : "bg-[#ffb800] text-gray-900"}`}><MessageContent text={msg.text} /></div>
+                                        {showTimestamp && (
+                                            <div className="text-[11px] text-[#4b4b4b] mt-1 ml-0.5 sm:text-[10px]">
+                                                {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                                {statusText}
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
                             <div ref={messagesEndRef} />
                         </div>
 
-                        <div className="flex gap-2 p-4 border-t border-[#e5e7eb] bg-white shrink-0 sm:p-2.5 sm:gap-1.5">
-                            <input
-                                type="text"
+                        <div className="flex gap-2 p-4 border-t border-[#e5e7eb] bg-white shrink-0 sm:p-2.5 sm:gap-1.5 items-end">
+                            <textarea
+                                ref={textareaRef}
                                 value={messageText}
-                                onChange={(e) => setMessageText(e.target.value)}
-                                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                                onChange={(e) => {
+                                    setMessageText(e.target.value);
+                                    e.target.style.height = 'auto';
+                                    e.target.style.height = `${e.target.scrollHeight}px`;
+                                }}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        sendMessage();
+                                    }
+                                }}
+                                rows={1}
                                 placeholder="Type a message..."
-                                className="flex-1 border border-[#e5e7eb] rounded-lg p-2.5 px-3 text-sm focus:outline-none focus:border-[#1c6ef2] sm:text-[13px] sm:p-[9px_10px]"
+                                className="flex-1 border border-[#e5e7eb] rounded-xl py-[10px] px-3.5 text-sm focus:outline-none focus:border-[#1c6ef2] sm:text-[13px] sm:py-2 resize-none overflow-y-auto max-h-[120px]"
+                                style={{ minHeight: '44px' }}
                             />
-                            <button className="bg-[#1c6ef2] text-white w-10 h-10 rounded-lg flex items-center justify-center text-lg hover:scale-105 transition-transform duration-300 cursor-pointer border-none sm:w-9 sm:h-9 sm:text-base" onClick={() => sendMessage()}>→</button>
+                            <button 
+                                className="bg-[#1c6ef2] text-white w-[44px] h-[44px] rounded-xl flex items-center justify-center text-lg hover:scale-105 transition-transform duration-300 cursor-pointer border-none sm:w-10 sm:h-10 sm:text-base shrink-0" 
+                                onClick={() => sendMessage()}
+                            >
+                                →
+                            </button>
                         </div>
                     </div>
                 )}

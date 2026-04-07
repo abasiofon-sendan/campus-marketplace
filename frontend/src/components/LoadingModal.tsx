@@ -1,7 +1,7 @@
 import React from 'react';
 
 // You might need to adjust the image path if it's different in your project structure
-const LOGO_URL = "https://icuklzexzhusblkzglnr.supabase.co/storage/v1/object/public/marketplace/logo/Upstart_3_-removebg-preview.png";
+const LOGO_URL = "/Upstart_3_-removebg-preview.png";
 
 export default function LoadingModal() {
   return (

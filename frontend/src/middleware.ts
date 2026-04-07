@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+  return NextResponse.next()
   
   // Allow requests for the waitlist path
   if (pathname === '/waitlist') {

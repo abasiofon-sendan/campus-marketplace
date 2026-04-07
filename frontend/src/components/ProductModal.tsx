@@ -4,6 +4,7 @@ import { useToast } from '../context/ToastContext';
 
 interface Product {
     _id?: string;
+    id?: string | number;
     product_name: string;
     description?: string;
     price: number;
@@ -47,9 +48,9 @@ export default function ProductModal({ product, onClose, addToCart }: ProductMod
 
     const handleShare = async () => {
         const shareUrl = new URL(window.location.href);
-        // Assuming the product has an _id to form the URL mapping
-        if (product._id) {
-            shareUrl.searchParams.set("productId", product._id);
+        const prodId = product._id || product.id;
+        if (prodId) {
+            shareUrl.searchParams.set("productId", prodId.toString());
         }
         
         if (navigator.share) {
@@ -173,7 +174,22 @@ export default function ProductModal({ product, onClose, addToCart }: ProductMod
                         <div className="flex flex-col gap-3 mt-6 pt-6 border-t border-gray-100 sticky bottom-0 bg-white pb-2 md:relative md:border-t-0 md:bg-transparent md:pb-0">
                             <button className="w-full py-3 px-6 bg-amber-400 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_16px_rgba(255,184,0,0.3)] text-sm border-none cursor-pointer" onClick={handleAddToCart}>Add to Cart</button>
                             <div className="flex gap-2 w-full">
-                                <button className="flex-1 py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_16px_rgba(28,110,242,0.3)] text-sm border border-blue-600 cursor-pointer">Contact Vendor</button>
+                                <button className="flex-1 py-3 px-6 bg-blue-600 text-white rounded-lg font-semibold transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_16px_rgba(28,110,242,0.3)] text-sm border border-blue-600 cursor-pointer" onClick={() => {
+                                    const productUrl = new URL(window.location.origin);
+                                    const prodId = product._id || product.id;
+                                    if (prodId) {
+                                        productUrl.searchParams.set("productId", prodId.toString());
+                                    }
+                                    let text = `Hi, I'm interested in: ${product.product_name}`;
+                                    if (product.price) text += `\nPrice: ₦${product.price}`;
+                                    text += `\nLink: ${productUrl.toString()}`;
+                                    
+                                    if (product.vendor_id) {
+                                        window.location.href = `/chat?vendorId=${product.vendor_id}&text=${encodeURIComponent(text)}`;
+                                    } else {
+                                        showToast('Vendor information not available', 'error');
+                                    }
+                                }}>Contact Vendor</button>
                                 <button className="p-2.5 rounded-lg border border-gray-200 bg-gray-50 cursor-pointer transition-all hover:bg-white flex items-center justify-center shrink-0" aria-label="Share Product" onClick={handleShare}>
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                         <circle cx="18" cy="5" r="3"></circle>
