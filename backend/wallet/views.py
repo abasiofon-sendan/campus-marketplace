@@ -6,11 +6,11 @@ import uuid
 import requests
 from decimal import Decimal
 from django.conf import settings
-from paymentapp.models import BuyerWallet,VendorWallet
-from paymentapp.serializers import BuyerWalletSerializer, VendorWalletSerializer
+from paymentapp.models import BuyerWallet, VendorWallet, Transaction
+from paymentapp.serializers import BuyerWalletSerializer, VendorWalletSerializer, TransactionSerializer
 from .models import TopUpMOdel
+from .serializers import TopUpSerializer
 from rest_framework.permissions import IsAuthenticated
-
 
 
 class TopUpWAlletView(APIView):
@@ -161,18 +161,56 @@ class VerifyTopupView(APIView):
             }, status=status.HTTP_200_OK)
         return Response({"error":"Failed to verifiy TOPUP"},status=status.HTTP_400_BAD_REQUEST)
 
-            
-
 
 class GetWalletBalanceView(APIView):
     permission_classes = [IsAuthenticated]
     def get(self, request):
         user = request.user
-        if user.role == 'vendor':
-            data = VendorWallet.objects.get(vendor=request.user)
-            serializer = VendorWalletSerializer(data)
-        else:
-            data = BuyerWallet.objects.get(user=request.user)
-            serializer = BuyerWalletSerializer(data)
-        return Response(serializer.data)
+        try:
+            if user.role == 'vendor':
+                data = VendorWallet.objects.get(vendor=request.user)
+                serializer = VendorWalletSerializer(data)
+            else:
+                data = BuyerWallet.objects.get(user=request.user)
+                serializer = BuyerWalletSerializer(data)
+            return Response(serializer.data)
+        except (VendorWallet.DoesNotExist, BuyerWallet.DoesNotExist):
+            return Response({"error": "Wallet not found"}, status=status.HTTP_404_NOT_FOUND)
+
+
+class WalletHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
         
+        # Get Purchases (Transactions)
+        if user.role == 'vendor':
+            purchases = Transaction.objects.filter(vendor__vendor=user, status='COMPLETED').order_by('-timestamp')
+            topups = TopUpMOdel.objects.filter(vendor__vendor=user, status='COMPLETED').order_by('-created_at')
+        else:
+            purchases = Transaction.objects.filter(buyer__user=user, status='COMPLETED').order_by('-timestamp')
+            topups = TopUpMOdel.objects.filter(buyer__user=user, status='COMPLETED').order_by('-created_at')
+            
+        purchase_data = TransactionSerializer(purchases, many=True).data
+        topup_data = TopUpSerializer(topups, many=True).data
+        
+        # Add labels to distinguish
+        for p in purchase_data:
+            p['history_type'] = 'PURCHASE'
+            p['date'] = p['timestamp']
+            p['type'] = 'debit'
+            p['amount'] = float(p['amount'])
+            
+        for t in topup_data:
+            t['history_type'] = 'TOPUP'
+            t['date'] = t.get('created_at', None) # If we don't have created_at yet legacy data might be problematic
+            t['type'] = 'credit'
+            t['amount'] = float(t['amount'])
+            t['description'] = 'Wallet Top-up'
+
+        # Combine and sort by date
+        history = purchase_data + topup_data
+        history.sort(key=lambda x: x.get('date') or '', reverse=True)
+        
+        return Response(history)
