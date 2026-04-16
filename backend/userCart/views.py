@@ -45,6 +45,34 @@ class CarItemView(APIView):
             serializer.save(user=request.user)
             return Response(serializer.data,status=status.HTTP_201_CREATED)
         return Response(serializer.errors,status=status.HTTP_400_BAD_REQUEST)
+
+    def patch(self, request, pk):
+        try:
+            cart_item = CartItem.objects.get(pk=pk, user=request.user)
+        except CartItem.DoesNotExist:
+            return Response({"message": "Cart item not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        quantity = request.data.get("quantity")
+        if quantity is not None:
+            try:
+                quantity = int(quantity)
+                if quantity <= 0:
+                    cart_item.delete()
+                    return Response({"message": "Item removed from cart"}, status=status.HTTP_200_OK)
+
+                # Check stock
+                if cart_item.product.quantity < quantity:
+                    return Response({
+                        "message": f"Only {cart_item.product.quantity} items available in stock."
+                    }, status=status.HTTP_400_BAD_REQUEST)
+
+                cart_item.quantity = quantity
+                cart_item.save()
+            except ValueError:
+                return Response({"message": "Invalid quantity"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = CartItemSerializer(cart_item)
+        return Response(serializer.data, status=status.HTTP_200_OK)
     
     def delete(self,request,pk):
         try:
