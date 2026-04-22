@@ -7,8 +7,8 @@ Campus Marketplace is a full-stack marketplace application with:
 
 ## Repository Structure
 
-- `/home/runner/work/campus-marketplace/campus-marketplace/backend` — Django API and real-time services
-- `/home/runner/work/campus-marketplace/campus-marketplace/frontend` — Next.js web client
+- `./backend` — Django API and real-time services
+- `./frontend` — Next.js web client
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ Campus Marketplace is a full-stack marketplace application with:
 
 1. Go to backend:
    ```bash
-   cd /home/runner/work/campus-marketplace/campus-marketplace/backend
+   cd backend
    ```
 2. Create and activate a virtual environment:
    ```bash
@@ -59,7 +59,7 @@ Campus Marketplace is a full-stack marketplace application with:
 
 1. Go to frontend:
    ```bash
-   cd /home/runner/work/campus-marketplace/campus-marketplace/frontend
+   cd frontend
    ```
 2. Install dependencies:
    ```bash
@@ -76,7 +76,7 @@ Campus Marketplace is a full-stack marketplace application with:
 ### Frontend
 
 ```bash
-cd /home/runner/work/campus-marketplace/campus-marketplace/frontend
+cd frontend
 npm run dev
 npm run build
 npm run lint
@@ -85,7 +85,7 @@ npm run lint
 ### Backend
 
 ```bash
-cd /home/runner/work/campus-marketplace/campus-marketplace/backend
+cd backend
 python manage.py migrate
 python manage.py test
 ```
