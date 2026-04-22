@@ -1,4 +1,4 @@
-# Campus Marketplace (PYMarket)
+# Campus Marketplace
 
 Campus Marketplace is a full-stack marketplace application with:
 
@@ -27,6 +27,10 @@ Campus Marketplace is a full-stack marketplace application with:
    ```bash
    python -m venv .venv
    source .venv/bin/activate
+   ```
+   On Windows (PowerShell), use:
+   ```powershell
+   .venv\Scripts\Activate.ps1
    ```
 3. Install dependencies:
    ```bash
